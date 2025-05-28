@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { useState,useEffect } from 'react';
 // import PrivateRoute from './utils/PrivateRoutes';
 // import { 
 //   ProtectedRoute, 
@@ -44,6 +45,15 @@ const PrivateRoute = ({ children }) => {
 };
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Optionally validate token with backend
+      setIsLoggedIn(true);
+    }
+  }, []);
+
   return (
     <AuthProvider> {/* Wrap with your auth provider */}
       <Routes>

@@ -9,29 +9,24 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    // On initial load, restore user from localStorage
     useEffect(() => {
-        // Check for stored authentication data when app loads
-        const token = localStorage.getItem('userToken');
-        const role = localStorage.getItem('userRole');
-        const userId = localStorage.getItem('userId');
-
-        if (token && role && userId) {
-            setCurrentUser({ token, role, userId });
+        const storedUser = localStorage.getItem('userData');
+        if (storedUser) {
+            setCurrentUser(JSON.parse(storedUser));
         }
         setLoading(false);
     }, []);
 
+    // Login: save user data to state and localStorage
     const login = (userData) => {
-        localStorage.setItem('userToken', userData.token);
-        localStorage.setItem('userRole', userData.role);
-        localStorage.setItem('userId', userData._id);
+        localStorage.setItem('userData', JSON.stringify(userData));
         setCurrentUser(userData);
     };
 
+    // Logout: clear everything
     const logout = () => {
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userId');
+        localStorage.removeItem('userData');
         setCurrentUser(null);
         navigate('/login');
     };
@@ -40,12 +35,18 @@ export function AuthProvider({ children }) {
         currentUser,
         login,
         logout,
-        loading
+        loading,
+        isLoggedIn: !!currentUser,
     };
 
-    return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
+    return (
+        <AuthContext.Provider value={value}>
+            {!loading && children}
+        </AuthContext.Provider>
+    );
 }
 
+// Custom hook to use auth context
 export function useAuth() {
     return useContext(AuthContext);
 }
