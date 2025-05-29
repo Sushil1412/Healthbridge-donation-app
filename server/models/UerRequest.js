@@ -4,8 +4,12 @@ const UserRequestSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
-        trim: true,
         lowercase: true
+    },
+    name: {
+        type: String,
+        required: true,
+        trim: true
     },
     type: {
         type: String,
@@ -28,8 +32,12 @@ const UserRequestSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Pending', 'Approved', 'Unavailable', 'Rejected'],
+        enum: ['Pending', 'Approved', 'unavailable', 'Rejected'],
         default: 'Pending'
+    },
+    neededBy: {
+        type: Date,
+        required: true
     },
     date: {
         type: Date,

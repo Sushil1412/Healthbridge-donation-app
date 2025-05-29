@@ -16,7 +16,7 @@ const generateToken = (id, role) => {
 // @route   POST /api/auth/signup
 // @access  Public
 exports.signup = async (req, res) => {
-  const { name, email, password, role, bloodGroup, aadhar, hospitalId } = req.body;
+  const { name, email, password, role, bloodGroup, aadhar, hospitalId, address } = req.body;
 
   if (!role) {
     return res.status(400).json({ message: 'Role is required' });
@@ -53,15 +53,15 @@ exports.signup = async (req, res) => {
         user = await Donor.create({ name, email, password, bloodGroup, aadhar, role });
         break;
       case 'hospital':
-        if (!name || !email || !password || !hospitalId) {
-          return res.status(400).json({ message: 'Please provide all required fields for hospital: name, email, password, hospitalId' });
+        if (!name || !email || !password || !hospitalId || !address) {
+          return res.status(400).json({ message: 'Please provide all required fields for hospital: name, email, password, hospitalId, address' });
         }
         existingUser = await Hospital.findOne({ $or: [{ email }, { hospitalId }] });
         if (existingUser) {
           const field = existingUser.email === email ? 'Email' : 'Hospital ID';
           return res.status(400).json({ message: `${field} already exists` });
         }
-        user = await Hospital.create({ name, email, password, hospitalId, role });
+        user = await Hospital.create({ name, email, password, hospitalId, role ,address});
         break;
       default:
         return res.status(400).json({ message: 'Invalid role specified' });
@@ -167,7 +167,7 @@ exports.login = async (req, res) => {
   }
 };
 exports.userrequest = async (req, res) => {
-  const { type, bloodType, organ, additionalInfo, email } = req.body;
+  const { name, neededBy, type, bloodType, organ, additionalInfo, email } = req.body;
 
   console.log('Request body:', req.body); // Log incoming request
 
@@ -185,14 +185,23 @@ exports.userrequest = async (req, res) => {
     if (!email) {
       return res.status(400).json({ error: 'Email is required' });
     }
+    if (!name) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+    if (!neededBy) {
+      return res.status(400).json({ error: 'neededBy is required' });
+    }
 
     const newRequest = new UserRequest({
+
       email,
+      name,
       type,
       bloodType: type === 'Blood' ? bloodType : undefined,
       organ: type === 'Organ' ? organ : undefined,
       additionalInfo,
       status: 'Pending',
+      neededBy,
       createdAt: new Date()
     });
 

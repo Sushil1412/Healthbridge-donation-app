@@ -1,26 +1,23 @@
-// import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import UserHeader from '../../components/Header/UserHeader';
-import { useState, useEffect } from 'react';
 import axios from 'axios';
-
 
 const RecipientDashboard = () => {
     const [activeTab, setActiveTab] = useState('requests');
     const [showRequestForm, setShowRequestForm] = useState(false);
     const [requests, setRequests] = useState([]);
 
-    // ✅ Fetch requests from backend on component mount
+    const id = localStorage.getItem('email');
+
     useEffect(() => {
         fetchRequestsFromBackend();
     }, []);
 
-    const id = localStorage.getItem('email');
-
     const fetchRequestsFromBackend = async () => {
         try {
             const response = await axios.get(`http://localhost:8000/api/auth/userrequest/${id}`);
-            setRequests(response.data); // Assuming backend returns an array of requests
+            setRequests(response.data);
         } catch (error) {
             console.error('Error fetching requests:', error);
         }
@@ -30,12 +27,10 @@ const RecipientDashboard = () => {
         setShowRequestForm(true);
     };
 
-    // ✅ Submit a new request to backend
     const handleSubmitRequest = async (newRequest) => {
         try {
-            console.log(newRequest);
             const response = await axios.post('http://localhost:8000/api/auth/userrequest', newRequest);
-            setRequests(prev => [...prev, response.data]); // Add the new request to the list
+            setRequests(prev => [...prev, response.data]);
             setShowRequestForm(false);
         } catch (error) {
             console.error('Error submitting request:', error);
@@ -43,7 +38,6 @@ const RecipientDashboard = () => {
         }
     };
 
-    // (Optional) Delete/cancel a request — only if backend supports DELETE
     const handleCancelRequest = async (id) => {
         try {
             await axios.delete(`http://localhost:8000/api/auth/userrequest/${id}`);
@@ -55,12 +49,9 @@ const RecipientDashboard = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
             <UserHeader />
 
-            {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
-                {/* New Request Form Modal */}
                 {showRequestForm && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
@@ -72,7 +63,6 @@ const RecipientDashboard = () => {
                     </div>
                 )}
 
-                {/* Tab Content */}
                 <div className="mt-6">
                     {activeTab === 'requests' && (
                         <div className="space-y-6">
@@ -99,22 +89,23 @@ const RecipientDashboard = () => {
     );
 };
 
-// New Request Form Component
+// ✅ New Request Form
 const NewRequestForm = ({ onSubmit, onCancel }) => {
     const [requestType, setRequestType] = useState('Blood');
     const [formData, setFormData] = useState({
+        name: '',
+        neededBy: '',
         bloodType: '',
         organ: '',
         additionalInfo: ''
     });
-    // const email = localStorage.getItem('email');
-    // console.log("Email from localStorage:", localStorage.getItem('email'));
-
 
     const handleSubmit = (e) => {
         e.preventDefault();
         const request = {
             email: localStorage.getItem('email'),
+            name: formData.name,
+            neededBy: formData.neededBy,
             type: requestType,
             bloodType: requestType === 'Blood' ? formData.bloodType : '',
             organ: requestType === 'Organ' ? formData.organ : '',
@@ -132,6 +123,30 @@ const NewRequestForm = ({ onSubmit, onCancel }) => {
     return (
         <form onSubmit={handleSubmit}>
             <h2 className="text-lg font-medium mb-4">Create New Request</h2>
+
+            <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full p-2 border rounded"
+                    required
+                />
+            </div>
+
+            <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Needed By</label>
+                <input
+                    type="date"
+                    name="neededBy"
+                    value={formData.neededBy}
+                    onChange={handleChange}
+                    className="w-full p-2 border rounded"
+                    required
+                />
+            </div>
 
             <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Request Type</label>
@@ -216,9 +231,7 @@ const NewRequestForm = ({ onSubmit, onCancel }) => {
     );
 };
 
-
-
-// Updated RequestList component with cancel functionality
+// ✅ Request List Component
 const RequestList = ({ requests, onCancel }) => (
     <div className="bg-white shadow overflow-hidden sm:rounded-lg">
         {requests.length === 0 ? (
@@ -228,16 +241,16 @@ const RequestList = ({ requests, onCancel }) => (
         ) : (
             <ul className="divide-y divide-gray-200">
                 {requests.map((request) => (
-                    <li key={request.id} className="py-4 hover:bg-gray-50 transition-colors duration-150 gap-10">
-                        < div className="px-4 sm:px-6" >
+                    <li key={request._id} className="py-4 hover:bg-gray-50 transition-colors duration-150 gap-10">
+                        <div className="px-4 sm:px-6">
                             <div className="flex items-center justify-between">
                                 <p className="text-sm font-medium text-blue-600 truncate">
                                     {request.type} Request ({request.bloodType || request.organ})
                                 </p>
                                 <div className="ml-2 flex-shrink-0 flex">
                                     <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${request.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                        request.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                            'bg-red-100 text-red-800'
+                                            request.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-red-100 text-red-800'
                                         }`}>
                                         {request.status}
                                     </p>
@@ -246,31 +259,25 @@ const RequestList = ({ requests, onCancel }) => (
                             <div className="mt-3 sm:flex sm:justify-between">
                                 <div className="sm:flex">
                                     <p className="flex items-center text-sm text-gray-500">
-                                        Requested on: {request.date}
+                                        Needed by: {request.neededBy || 'N/A'}
                                     </p>
                                 </div>
                                 <div className="mt-3 flex items-center text-sm text-gray-500 sm:mt-0 space-x-4">
                                     <button className="text-blue-600 hover:text-blue-800 hover:underline">
                                         View Details
                                     </button>
-                                    {/* {request.status === 'Pending' && (
-                                        <button
-                                            className="text-red-600 hover:text-red-800 hover:underline"
-                                            onClick={() => onCancel(request.id)}
-                                        >
-                                            Cancel
-                                        </button>
-                                    )} */}
                                 </div>
                             </div>
                         </div>
                     </li>
                 ))}
-            </ul >
+            </ul>
         )}
-    </div >
+    </div>
 );
 
-// ... (keep the existing HistoryTable and ProfileSection components the same)
+// // Optional placeholder components:
+// const HistoryTable = () => <div className="text-gray-600">History tab coming soon...</div>;
+// const ProfileSection = () => <div className="text-gray-600">Profile section coming soon...</div>;
 
 export default RecipientDashboard;

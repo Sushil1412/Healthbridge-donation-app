@@ -26,6 +26,10 @@ const HospitalSchema = new mongoose.Schema({
         required: [true, 'Hospital ID is required'],
         unique: true,
     },
+    address: { // Hospital Address
+        type: String,
+        required: [true, 'Hospital address is required'],
+    },
     status: {
         type: String,
         enum: ['active', 'inactive', 'pending'], // Customize statuses as needed

@@ -11,7 +11,8 @@ const Signup = () => {
         role: '',
         bloodGroup: '',
         aadhar: '',
-        hospitalId: ''
+        hospitalId: '',
+        address: ''  // Added address field
     });
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
@@ -48,7 +49,8 @@ const Signup = () => {
                 role: formData.role,
                 bloodGroup: '',
                 aadhar: '',
-                hospitalId: ''
+                hospitalId: '',
+                address: formData.address  // Include address in payload
             };
 
             // Add role-specific fields
@@ -71,7 +73,13 @@ const Signup = () => {
                     setIsLoading(false);
                     return;
                 }
+                if (!formData.address) {
+                    setError('Hospital address is required');
+                    setIsLoading(false);
+                    return;
+                }
                 payload.hospitalId = formData.hospitalId;
+                payload.address = formData.address;
             }
 
             console.log('Sending payload:', payload); // For debugging
@@ -79,20 +87,6 @@ const Signup = () => {
             const res = await axios.post('http://localhost:8000/api/auth/signup', payload);
             setMessage(res.data.message);
             navigate('/');
-            // Redirect based on role
-            // switch (formData.role) {
-            //     case 'recipient':
-            //         navigate('/recipiant-dashboard');
-            //         break;
-            //     case 'donor':
-            //         navigate('/donor');
-            //         break;
-            //     case 'hospital':
-            //         navigate('/hospital');
-            //         break;
-            //     default:
-            //         navigate('/');
-            // }
         } catch (err) {
             setError(err.response?.data?.message || 'Registration failed. Please try again.');
         } finally {
@@ -100,7 +94,6 @@ const Signup = () => {
         }
     };
 
-    // ... (rest of the component remains the same)
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             {/* Header */}
@@ -241,6 +234,23 @@ const Signup = () => {
                                         required={formData.role === 'hospital'}
                                         className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                                         placeholder="Hospital Registration ID"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Address (for hospitals) */}
+                            {formData.role === 'hospital' && (
+                                <div>
+                                    <label htmlFor="address" className="sr-only">Hospital Address</label>
+                                    <textarea
+                                        id="address"
+                                        name="address"
+                                        rows="3"
+                                        value={formData.address}
+                                        onChange={handleChange}
+                                        required={formData.role === 'hospital'}
+                                        className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
+                                        placeholder="Hospital Full Address"
                                     />
                                 </div>
                             )}

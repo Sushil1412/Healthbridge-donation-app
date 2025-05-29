@@ -2,6 +2,7 @@ const express = require('express');
 const Donor = require('../../models/Donor');
 const Hospital = require('../../models/Hospital');
 const UserRequest = require('../../models/UerRequest');
+const BloodInventory = require('../../models/BloodInventory')
 
 const router = express.Router();
 
@@ -66,7 +67,7 @@ exports.adminupdate = async (req, res) => {
 // Get all pending requests
 exports.adminapplication = async (req, res) => {
     try {
-        const requests = await UserRequest.find({ status: 'Pending' });
+        const requests = await UserRequest.find({});
         res.json(requests);
         console.log(requests);
     } catch (err) {
@@ -75,21 +76,21 @@ exports.adminapplication = async (req, res) => {
 }
 exports.adminapplicationupdate = async (req, res) => {
     try {
-        // const { email } = req.params.email; // Get ID from URL parameters
-        const { email, status } = req.body;
+        const { requestId, status } = req.body; // Now using requestId instead of email
 
         // Validate status
+        console.log(status);
         const validStatuses = ['Pending', 'Approved', 'unavailable', 'Rejected'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid status. Allowed values: pending, accepted, unavailable, rejected'
+                message: 'Invalid status. Allowed values: Pending, Approved, unavailable, Rejected'
             });
         }
-        console.log("hiii", email);
-        // Find and update the request
-        const updatedRequest = await UserRequest.findOneAndUpdate(
-            { email: email },  // Query by email instead of ID
+
+        // Find and update the request by its unique ID
+        const updatedRequest = await UserRequest.findByIdAndUpdate(
+            requestId,
             { status },
             { new: true, runValidators: true }
         );
@@ -101,7 +102,6 @@ exports.adminapplicationupdate = async (req, res) => {
             });
         }
 
-        // Successful response
         res.status(200).json({
             success: true,
             message: 'Request status updated successfully',
@@ -117,3 +117,49 @@ exports.adminapplicationupdate = async (req, res) => {
         });
     }
 };
+
+exports.adminhistory = async (req, res) => {
+    try {
+        const users = await UserRequest.find({
+            status: { $in: ["approved", "unavailable"] }
+        });
+
+        res.json(users);
+        console.log(requests);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+
+}
+
+//hospital request
+
+exports.hospitalinventory = async (req, res) => {
+
+    try {
+        
+        const inventory = await BloodInventory.find({ hospitalId: req.user.hospitalId });
+        res.json(inventory);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+//update 
+exports.inventoryupdate = async (req, res) => {
+    try {
+        const { bloodType } = req.params;
+        const { units } = req.body;
+
+        const updatedInventory = await BloodInventory.findOneAndUpdate(
+            { hospitalId: req.user.hospitalId, bloodType },
+            { $inc: { units } },
+            { new: true, upsert: true }
+        );
+
+        res.json(updatedInventory);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+};
+
