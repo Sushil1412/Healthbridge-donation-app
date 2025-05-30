@@ -40,7 +40,7 @@ const Login = () => {
             });
 
             const data = await response.json();
-            console.log(data);
+            // console.log(data);
 
             if (!response.ok) {
                 throw new Error(data.message || 'Login failed. Please check your credentials.');
@@ -71,7 +71,9 @@ const Login = () => {
             localStorage.setItem('userRole', data.role);
             localStorage.setItem('userId', data._id);
             localStorage.setItem('email', data.email);
-
+            localStorage.setItem('name', data.name);
+            // const n = localStorage.getItem('name');
+            // console.log(n);
             login({
                 token: data.token,
                 role: data.role,

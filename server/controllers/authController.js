@@ -61,7 +61,7 @@ exports.signup = async (req, res) => {
           const field = existingUser.email === email ? 'Email' : 'Hospital ID';
           return res.status(400).json({ message: `${field} already exists` });
         }
-        user = await Hospital.create({ name, email, password, hospitalId, role ,address});
+        user = await Hospital.create({ name, email, password, hospitalId, role, address });
         break;
       default:
         return res.status(400).json({ message: 'Invalid role specified' });
@@ -146,7 +146,7 @@ exports.login = async (req, res) => {
       }
     }
 
-    // console.log(user.role);
+    // console.log("this name is", user.name);
 
     res.json({
       _id: user._id,

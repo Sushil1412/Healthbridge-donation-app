@@ -3,7 +3,7 @@ const Donor = require('../../models/Donor');
 const Hospital = require('../../models/Hospital');
 const UserRequest = require('../../models/UerRequest');
 const BloodInventory = require('../../models/BloodInventory')
-
+const HospitalRequest = require('../../models/HospitalRequest')
 const router = express.Router();
 
 // Get all pending requests (both donors and hospitals)
@@ -134,32 +134,105 @@ exports.adminhistory = async (req, res) => {
 
 //hospital request
 
+// Controller
 exports.hospitalinventory = async (req, res) => {
-
     try {
-        
-        const inventory = await BloodInventory.find({ hospitalId: req.user.hospitalId });
+        const hospitalEmail = req.query.hospitalEmail; // ✅ use query instead of body
+        // console.log("hospital email", hospitalEmail);
+
+        const hospital = await Hospital.findOne({ email: hospitalEmail });
+        if (!hospital) {
+            return res.status(404).json({ message: 'Hospital not found' });
+        }
+
+        const inventory = await BloodInventory.find({ hospitalId: hospital.hospitalId });
         res.json(inventory);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
-//update 
+
+// Update or insert inventory entry
 exports.inventoryupdate = async (req, res) => {
     try {
-        const { bloodType } = req.params;
-        const { units } = req.body;
+        const { hospitalEmail, name, bloodType, quantity, neededBy } = req.body;
 
-        const updatedInventory = await BloodInventory.findOneAndUpdate(
-            { hospitalId: req.user.hospitalId, bloodType },
-            { $inc: { units } },
-            { new: true, upsert: true }
-        );
+        if (!hospitalEmail || !bloodType || !name || quantity === undefined) {
+            return res.status(400).json({ message: "All fields are required." });
+        }
 
-        res.json(updatedInventory);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
+        const parsedQuantity = Number(quantity);
+        if (isNaN(parsedQuantity)) {
+            return res.status(400).json({ message: "Quantity must be a valid number." });
+        }
+
+        const hospital = await Hospital.findOne({ email: hospitalEmail });
+        if (!hospital) {
+            return res.status(404).json({ message: 'Hospital not found' });
+        }
+
+        const filter = {
+            hospitalId: hospital.hospitalId,
+            bloodType: bloodType
+        };
+
+        const total = Number(hospital.units || 0) + parsedQuantity;
+
+        const update = {
+            hospitalName: name,
+            units: total,
+            lastUpdated: new Date()
+        };
+
+        const options = {
+            new: true,
+            upsert: true,
+            setDefaultsOnInsert: true
+        };
+
+        const updatedInventory = await BloodInventory.findOneAndUpdate(filter, update, options);
+
+        res.status(200).json({ message: 'Inventory updated successfully.', data: updatedInventory });
+
+    } catch (error) {
+        console.error('Error in inventoryUpdate:', error);
+        res.status(500).json({ message: 'Server error.' });
     }
 };
 
+
+//hospital request
+
+exports.hospitalrequest = async (req, res) => {
+
+    try {
+        const { hospitalEmail, hospitalName, bloodType, quantity, neededBy } = req.body;
+
+        // Validate input
+        if (!bloodType || !quantity || !neededBy) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // Create new request
+        const newRequest = new HospitalRequest({
+            hospitalEmail,
+            hospitalName,
+            bloodType,
+            quantity,
+            neededBy: new Date(neededBy),
+            status: 'pending'
+        });
+
+        await newRequest.save();
+
+        res.status(201).json({
+            message: 'Blood request submitted successfully',
+            request: newRequest
+        });
+    } catch (error) {
+        console.error('Error submitting blood request:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+
+}

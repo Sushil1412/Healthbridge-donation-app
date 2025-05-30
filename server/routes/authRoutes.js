@@ -2,7 +2,7 @@ const express = require('express');
 const { signup, login, userrequest, getUserRequests } = require('../controllers/authController');
 // const { userrequest } = require('../controllers/request/request');
 // Example: const { protect, authorize } = require('../middleware/authMiddleware');
-const { adminrequest, adminupdate, adminapplication, adminapplicationupdate, adminhistory, hospitalinventory, inventoryupdate } = require('../controllers/request/adminrequest');
+const { adminrequest, adminupdate, adminapplication, adminapplicationupdate, adminhistory, hospitalinventory, inventoryupdate, hospitalrequest } = require('../controllers/request/adminrequest');
 
 const router = express.Router();
 
@@ -22,7 +22,8 @@ router.patch('/adminapplicationupdate', adminapplicationupdate);
 //hospital request
 
 router.get('/hospitalinventory', hospitalinventory);
-router.patch('/inventoryupdate', inventoryupdate);
+router.post('/inventoryupdate', inventoryupdate);
+router.post('/hospitalrequest', hospitalrequest)
 
 
 
