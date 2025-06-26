@@ -8,7 +8,7 @@ const UserRequest = require('../models/UerRequest');
 // Utility to generate JWT
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, jwtSecret, {
-    expiresIn: '30d', // Token expiry
+    expiresIn: '24h', // Token expiry
   });
 };
 
@@ -102,6 +102,7 @@ exports.login = async (req, res) => {
   try {
     let user;
     let UserModel;
+    console.log(portal);
 
     switch (portal.toLowerCase()) {
       case 'admin':
@@ -125,34 +126,44 @@ exports.login = async (req, res) => {
 
 
     if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ message: 'Invalid email' });
     }
 
     // Add null check for password comparison
     if (portal == 'admin') {
       if (user.password != password) {
-        return res.status(401).json({ message: 'Invalid email or password' });
+        return res.status(401).json({ message: 'Invalid password' });
       }
     } else {
 
       if (!password || !user.password) {
-        return res.status(401).json({ message: 'Invalid email or password' });
+        return res.status(401).json({ message: 'Invalid  password' });
       }
 
       const isMatch = await user.matchPassword(password);
 
       if (!isMatch) {
-        return res.status(401).json({ message: 'Invalid email or password' });
+        return res.status(401).json({ message: 'Invalid  password' });
       }
     }
 
+    // if(portal == 'donor'){
+    //   res.json({
+    //     _id: user._id,
+    //     name: user.name || '',
+    //     email: user.email,
+    //     status: 'approved',
+    //     role: portal.toLowerCase(),
+    //     token: generateToken(user._id, user.role),
+    //   });
+    // }
     // console.log("this name is", user.name);
 
     res.json({
       _id: user._id,
       name: user.name || '',
       email: user.email,
-      status: user.status || 'approved',
+      status: 'approved',
       role: portal.toLowerCase(),
       token: generateToken(user._id, user.role),
     });

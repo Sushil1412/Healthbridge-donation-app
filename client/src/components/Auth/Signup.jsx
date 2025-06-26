@@ -10,9 +10,7 @@ const Signup = () => {
         confirmPassword: '',
         role: '',
         bloodGroup: '',
-        aadhar: '',
-        hospitalId: '',
-        address: ''  // Added address field
+        aadhar: ''
     });
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
@@ -41,48 +39,25 @@ const Signup = () => {
         setIsLoading(true);
 
         try {
-            // Prepare the base payload
             const payload = {
                 name: formData.name,
                 email: formData.email,
                 password: formData.password,
                 role: formData.role,
-                bloodGroup: '',
-                aadhar: '',
-                hospitalId: '',
-                address: formData.address  // Include address in payload
+                bloodGroup: formData.bloodGroup,
+                aadhar: formData.aadhar
             };
 
-            // Add role-specific fields
-            if (formData.role === 'donor' || formData.role === 'recipient') {
-                if (!formData.bloodGroup) {
-                    setError('Please select your blood group');
-                    setIsLoading(false);
-                    return;
-                }
-                if (!formData.aadhar) {
-                    setError('Aadhar number is required');
-                    setIsLoading(false);
-                    return;
-                }
-                payload.bloodGroup = formData.bloodGroup;
-                payload.aadhar = formData.aadhar;
-            } else if (formData.role === 'hospital') {
-                if (!formData.hospitalId) {
-                    setError('Hospital ID is required');
-                    setIsLoading(false);
-                    return;
-                }
-                if (!formData.address) {
-                    setError('Hospital address is required');
-                    setIsLoading(false);
-                    return;
-                }
-                payload.hospitalId = formData.hospitalId;
-                payload.address = formData.address;
+            if (!formData.bloodGroup) {
+                setError('Please select your blood group');
+                setIsLoading(false);
+                return;
             }
-
-            console.log('Sending payload:', payload); // For debugging
+            if (!formData.aadhar) {
+                setError('Aadhar number is required');
+                setIsLoading(false);
+                return;
+            }
 
             const res = await axios.post('http://localhost:8000/api/auth/signup', payload);
             setMessage(res.data.message);
@@ -118,7 +93,7 @@ const Signup = () => {
                             Create your account
                         </h2>
                         <p className="mt-2 text-sm text-gray-600">
-                            Join LifeShare as a recipient, donor, or hospital
+                            Join LifeShare as a recipient or donor
                         </p>
                     </div>
 
@@ -140,8 +115,8 @@ const Signup = () => {
                     <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                         <div className="rounded-md shadow-sm space-y-4">
                             {/* Role Selection */}
-                            <div className="grid grid-cols-3 gap-3">
-                                {['recipient', 'donor', 'hospital'].map((role) => (
+                            <div className="grid grid-cols-2 gap-3">
+                                {['recipient', 'donor'].map((role) => (
                                     <div key={role} className="col-span-1">
                                         <input
                                             id={`role-${role}`}
@@ -196,81 +171,43 @@ const Signup = () => {
                                 />
                             </div>
 
-                            {/* Blood Group (for donors/recipients) */}
-                            {(formData.role === 'donor' || formData.role === 'recipient') && (
-                                <div>
-                                    <label htmlFor="bloodGroup" className="sr-only">Blood Group</label>
-                                    <select
-                                        id="bloodGroup"
-                                        name="bloodGroup"
-                                        value={formData.bloodGroup}
-                                        onChange={handleChange}
-                                        required={formData.role === 'donor' || formData.role === 'recipient'}
-                                        className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
-                                    >
-                                        <option value="">Select Blood Group</option>
-                                        <option value="A+">A+</option>
-                                        <option value="A-">A-</option>
-                                        <option value="B+">B+</option>
-                                        <option value="B-">B-</option>
-                                        <option value="AB+">AB+</option>
-                                        <option value="AB-">AB-</option>
-                                        <option value="O+">O+</option>
-                                        <option value="O-">O-</option>
-                                    </select>
-                                </div>
-                            )}
+                            {/* Blood Group */}
+                            <div>
+                                <label htmlFor="bloodGroup" className="sr-only">Blood Group</label>
+                                <select
+                                    id="bloodGroup"
+                                    name="bloodGroup"
+                                    value={formData.bloodGroup}
+                                    onChange={handleChange}
+                                    required
+                                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
+                                >
+                                    <option value="">Select Blood Group</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                            </div>
 
-                            {/* Hospital ID (for hospitals) */}
-                            {formData.role === 'hospital' && (
-                                <div>
-                                    <label htmlFor="hospitalId" className="sr-only">Hospital ID</label>
-                                    <input
-                                        id="hospitalId"
-                                        name="hospitalId"
-                                        type="text"
-                                        value={formData.hospitalId}
-                                        onChange={handleChange}
-                                        required={formData.role === 'hospital'}
-                                        className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
-                                        placeholder="Hospital Registration ID"
-                                    />
-                                </div>
-                            )}
-
-                            {/* Address (for hospitals) */}
-                            {formData.role === 'hospital' && (
-                                <div>
-                                    <label htmlFor="address" className="sr-only">Hospital Address</label>
-                                    <textarea
-                                        id="address"
-                                        name="address"
-                                        rows="3"
-                                        value={formData.address}
-                                        onChange={handleChange}
-                                        required={formData.role === 'hospital'}
-                                        className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
-                                        placeholder="Hospital Full Address"
-                                    />
-                                </div>
-                            )}
-
-                            {/* Aadhar (for donors/recipients) */}
-                            {(formData.role === 'donor' || formData.role === 'recipient') && (
-                                <div>
-                                    <label htmlFor="aadhar" className="sr-only">Aadhar Number</label>
-                                    <input
-                                        id="aadhar"
-                                        name="aadhar"
-                                        type="text"
-                                        value={formData.aadhar}
-                                        onChange={handleChange}
-                                        required={formData.role === 'donor' || formData.role === 'recipient'}
-                                        className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
-                                        placeholder="Aadhar Number"
-                                    />
-                                </div>
-                            )}
+                            {/* Aadhar */}
+                            <div>
+                                <label htmlFor="aadhar" className="sr-only">Aadhar Number</label>
+                                <input
+                                    id="aadhar"
+                                    name="aadhar"
+                                    type="text"
+                                    value={formData.aadhar}
+                                    onChange={handleChange}
+                                    required
+                                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
+                                    placeholder="Aadhar Number"
+                                />
+                            </div>
 
                             {/* Password */}
                             <div>

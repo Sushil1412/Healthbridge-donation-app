@@ -53,6 +53,12 @@ const UserHeader = () => {
                         >
                             Requests
                         </Link>
+                        {/* <Link
+                            to="/Admin/inventory"
+                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-600"
+                        >
+                            Inventory
+                        </Link> */}
 
 
                     </nav>

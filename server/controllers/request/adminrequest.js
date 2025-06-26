@@ -3,7 +3,8 @@ const Donor = require('../../models/Donor');
 const Hospital = require('../../models/Hospital');
 const UserRequest = require('../../models/UerRequest');
 const BloodInventory = require('../../models/BloodInventory')
-const HospitalRequest = require('../../models/HospitalRequest')
+const HospitalRequest = require('../../models/HospitalRequest');
+const OrganInventory = require('../../models/OrganInventory');
 const router = express.Router();
 
 // Get all pending requests (both donors and hospitals)
@@ -207,16 +208,17 @@ exports.inventoryupdate = async (req, res) => {
 exports.hospitalrequest = async (req, res) => {
 
     try {
-        const { hospitalEmail, hospitalName, bloodType, quantity, neededBy } = req.body;
+        const { hospitalEmail, type, hospitalName, bloodType, quantity, neededBy } = req.body;
 
         // Validate input
-        if (!bloodType || !quantity || !neededBy) {
+        if (!bloodType || !quantity || !neededBy, !type) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
         // Create new request
         const newRequest = new HospitalRequest({
             hospitalEmail,
+            requestType: type,
             hospitalName,
             bloodType,
             quantity,
@@ -235,4 +237,194 @@ exports.hospitalrequest = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 
+}
+
+
+//admin request for hospital info
+
+exports.adminhospitalrequests = async (req, res) => {
+    try {
+        const requests = await HospitalRequest.find({});
+        res.status(200).json(requests);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch records from hospital' });
+    }
+}
+
+// In your auth controller file (e.g., authController.js)
+
+// Update hospital request status
+exports.updateHospitalRequest = async (req, res) => {
+    try {
+        const { requestId, status } = req.body;
+
+        // Validate input
+        if (!requestId || !status) {
+            return res.status(400).json({ message: 'Request ID and status are required' });
+        }
+        console.log(requestId);
+        // Find the hospital request
+        const request = await HospitalRequest.findById(requestId);
+        if (!request) {
+            return res.status(404).json({ message: 'Hospital request not found' });
+        }
+
+        // Validate status
+        const validStatuses = ['pending', 'approved', 'rejected'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ message: 'Invalid status value' });
+        }
+
+        // Update the request
+        request.status = status;
+        request.updatedAt = new Date();
+        await request.save();
+
+        // If approved, you might want to do additional processing here
+        if (status === 'Approved') {
+            // For example, notify the hospital or create inventory records
+        }
+
+        res.status(200).json({
+            message: 'Hospital request updated successfully',
+            updatedRequest: request
+        });
+
+    } catch (error) {
+        console.error('Error updating hospital request:', error);
+        res.status(500).json({ message: 'Server error while updating hospital request' });
+    }
+};
+
+
+//organ inventory
+
+
+exports.organinventory = async (req, res) => {
+    try {
+        const { hospitalEmail } = req.query;
+
+        if (!hospitalEmail) {
+            return res.status(400).json({ message: 'Hospital email is required' });
+        }
+
+        const inventory = await OrganInventory.find({ hospitalEmail });
+
+        if (!inventory || inventory.length === 0) {
+            return res.status(404).json({ message: 'No organ inventory found for this hospital' });
+        }
+
+        res.status(200).json(inventory);
+    } catch (error) {
+        console.error('Error fetching organ inventory:', error);
+        res.status(500).json({ message: 'Server error while fetching organ inventory' });
+    }
+}
+
+exports.organinventoryupdate = async (req, res) => {
+    try {
+        const { hospitalEmail, hospitalName, organType, quantity } = req.body;
+
+        // Validate input
+        if (!hospitalEmail || !organType || quantity === undefined) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // Check if units is a valid number
+        if (isNaN(quantity) || quantity < 0) {
+            return res.status(400).json({ message: 'Invalid units value' });
+        }
+
+        // Find and update the organ inventory, or create if it doesn't exist
+        const updatedInventory = await OrganInventory.findOneAndUpdate(
+            { hospitalEmail, organType },
+            {
+                hospitalName,
+                quantity: parseInt(quantity),
+                updatedAt: Date.now()
+            },
+            {
+                upsert: true, // Create if doesn't exist
+                new: true // Return the updated document
+            }
+        );
+
+        res.status(200).json({
+            message: 'Organ inventory updated successfully',
+            inventory: updatedInventory
+        });
+    } catch (error) {
+        console.error('Error updating organ inventory:', error);
+        res.status(500).json({ message: 'Server error updating organ inventory' });
+    }
+}
+
+exports.hospitalorganrequests = async (req, res) => {
+    try {
+        const { hospitalEmail, type } = req.query;
+
+        // Validate required parameters
+        if (!hospitalEmail || !type) {
+            return res.status(400).json({ message: "Missing hospitalEmail or type query parameter" });
+        }
+
+        // Normalize requestType (make case-insensitive)
+        const requestType = type;
+
+        // Fetch matching records
+        const requests = await HospitalRequest.find({
+            hospitalEmail,
+            requestType
+        });
+
+        res.status(200).json(requests);
+    } catch (error) {
+        console.error("Error fetching hospital requests:", error);
+        res.status(500).json({ message: "Server error while fetching hospital requests" });
+    }
+}
+
+exports.hospitalrequestsubmit = async (req, res) => {
+    try {
+        const {
+            hospitalEmail,
+            hospitalName,
+            requestType,
+            organType,
+            quantity,
+            neededBy
+        } = req.body;
+
+        // Validate required fields
+        if (!hospitalEmail || !hospitalName || !requestType || !quantity || !neededBy) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        if (requestType === 'Organ' && !organType) {
+            return res.status(400).json({ message: 'Organ type is required for organ requests' });
+        }
+
+        // Create new request
+        const newRequest = new HospitalRequest({
+            hospitalEmail,
+            hospitalName,
+            requestType,
+            organType: requestType === 'organ' ? organType : undefined,
+            quantity,
+            neededBy: new Date(neededBy),
+            status: 'pending'
+        });
+
+        // Save to database
+        const savedRequest = await newRequest.save();
+
+        res.status(201).json({
+            message: 'Organ request submitted successfully',
+            request: savedRequest
+        });
+
+    } catch (error) {
+        console.error('Error submitting organ request:', error);
+        res.status(500).json({ message: 'Server error submitting request' });
+    }
 }

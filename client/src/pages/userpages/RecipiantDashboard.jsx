@@ -1,27 +1,42 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import UserHeader from '../../components/Header/UserHeader';
 import axios from 'axios';
+import Footer from '../../components/Footer/Footer';
 
 const RecipientDashboard = () => {
-    const [activeTab, setActiveTab] = useState('requests');
     const [showRequestForm, setShowRequestForm] = useState(false);
-    const [requests, setRequests] = useState([]);
+    const [currentBanner, setCurrentBanner] = useState(0);
 
     const id = localStorage.getItem('email');
 
-    useEffect(() => {
-        fetchRequestsFromBackend();
-    }, []);
-
-    const fetchRequestsFromBackend = async () => {
-        try {
-            const response = await axios.get(`http://localhost:8000/api/auth/userrequest/${id}`);
-            setRequests(response.data);
-        } catch (error) {
-            console.error('Error fetching requests:', error);
+    // Banner images and content
+    const banners = [
+        {
+            image: 'https://www.hfmmagazine.com/sites/default/files/hfmmagazine/ext/resources/images/2016/October/1116_upfront_microhospital_BSW.jpg',
+            title: 'Save Lives Through Blood Donation',
+            text: 'Every blood donation can save up to 3 lives. Register as a donor today!'
+        },
+        {
+            image: 'https://images.unsplash.com/photo-1581056771107-24ca5f033842?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+            title: 'Organ Donation Gives Second Chances',
+            text: 'Over 100,000 people are waiting for organ transplants in the US alone.'
+        },
+        {
+            image: 'https://images.unsplash.com/photo-1581595219315-a187dd40c322?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+            title: 'Partner Hospitals Across the Country',
+            text: 'We work with over 200 certified hospitals nationwide for safe transplants.'
         }
-    };
+    ];
+
+    useEffect(() => {
+        // Banner rotation
+        const interval = setInterval(() => {
+            setCurrentBanner((prev) => (prev + 1) % banners.length);
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     const handleNewRequest = () => {
         setShowRequestForm(true);
@@ -29,8 +44,7 @@ const RecipientDashboard = () => {
 
     const handleSubmitRequest = async (newRequest) => {
         try {
-            const response = await axios.post('http://localhost:8000/api/auth/userrequest', newRequest);
-            setRequests(prev => [...prev, response.data]);
+            await axios.post('http://localhost:8000/api/auth/userrequest', newRequest);
             setShowRequestForm(false);
         } catch (error) {
             console.error('Error submitting request:', error);
@@ -38,58 +52,103 @@ const RecipientDashboard = () => {
         }
     };
 
-    const handleCancelRequest = async (id) => {
-        try {
-            await axios.delete(`http://localhost:8000/api/auth/userrequest/${id}`);
-            setRequests(prev => prev.filter(req => req._id !== id));
-        } catch (error) {
-            console.error('Error canceling request:', error);
-        }
-    };
-
     return (
-        <div className="min-h-screen bg-gray-50">
+        <>
             <UserHeader />
-
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
-                {showRequestForm && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                            <NewRequestForm
-                                onSubmit={handleSubmitRequest}
-                                onCancel={() => setShowRequestForm(false)}
+            <div className="container mx-auto px-4 py-8">
+                {/* Hero Banner with rotating images */}
+                <div className="relative h-96 overflow-hidden rounded-lg shadow-lg mb-12">
+                    {banners.map((banner, index) => (
+                        <div
+                            key={index}
+                            className={`absolute inset-0 transition-opacity duration-1000 ${index === currentBanner ? 'opacity-100' : 'opacity-0'}`}
+                        >
+                            <img
+                                src={banner.image}
+                                alt={banner.title}
+                                className="w-full h-full object-cover"
                             />
-                        </div>
-                    </div>
-                )}
-
-                <div className="mt-6">
-                    {activeTab === 'requests' && (
-                        <div className="space-y-6">
-                            <div className="flex justify-left">
-                                <button
-                                    onClick={handleNewRequest}
-                                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                >
-                                    + New Request
-                                </button>
+                            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                                <div className="text-center text-white px-4">
+                                    <h2 className="text-3xl font-bold mb-2">{banner.title}</h2>
+                                    <p className="text-xl">{banner.text}</p><br></br>
+                                    <button
+                                        onClick={handleNewRequest}
+                                        className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                    >
+                                        + New Request
+                                    </button>
+                                </div>
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-900">My Requests</h3>
-                            <RequestList
-                                requests={requests.filter(req => req.status !== 'Completed')}
-                                onCancel={handleCancelRequest}
-                            />
+                        </div>
+                    ))}
+                </div>
+
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+                    {showRequestForm && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+                                <NewRequestForm
+                                    onSubmit={handleSubmitRequest}
+                                    onCancel={() => setShowRequestForm(false)}
+                                />
+                            </div>
                         </div>
                     )}
-                    {activeTab === 'history' && <HistoryTable requests={requests.filter(req => req.status === 'Completed')} />}
-                    {activeTab === 'profile' && <ProfileSection />}
-                </div>
-            </main>
-        </div>
+
+                    {/* Quick Actions Section
+                    <div className="mb-8 bg-white p-6 rounded-lg shadow">
+                        <div className="flex flex-col sm:flex-row justify-between items-center">
+                            <div className="mb-4 sm:mb-0">
+                                <h2 className="text-2xl font-bold text-gray-800">Need Help?</h2>
+                                <p className="text-gray-600">Create a new request for blood or organ donation</p>
+                            </div>
+                            <div className="flex space-x-4">
+
+                            </div>
+                        </div>
+                    </div> */}
+
+                    {/* Information Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div className="bg-white p-6 rounded-lg shadow">
+                            <h3 className="text-lg font-semibold mb-2 text-red-600">Blood Donation Facts</h3>
+                            <ul className="text-gray-600 space-y-2">
+                                <li>• Every 2 seconds someone needs blood</li>
+                                <li>• 1 donation can save up to 3 lives</li>
+                                <li>• Only 37% of population is eligible to donate</li>
+                            </ul>
+                        </div>
+                        <div className="bg-white p-6 rounded-lg shadow">
+                            <h3 className="text-lg font-semibold mb-2 text-red-600">Organ Donation Facts</h3>
+                            <ul className="text-gray-600 space-y-2">
+                                <li>• 1 donor can save 8 lives</li>
+                                <li>• Over 100,000 waiting for transplants</li>
+                                <li>• Kidneys are the most needed organ</li>
+                            </ul>
+                        </div>
+                        <div className="bg-white p-6 rounded-lg shadow">
+                            <h3 className="text-lg font-semibold mb-2 text-red-600">Our Network</h3>
+                            <ul className="text-gray-600 space-y-2">
+                                <li>• 200+ partner hospitals</li>
+                                <li>• 24/7 emergency support</li>
+                                <li>• Certified transplant centers</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* Profile Section */}
+                    <div className="mt-6">
+
+                    </div>
+                </main>
+            </div>
+            <Footer />
+        </>
     );
 };
 
-// ✅ New Request Form
+// New Request Form (same as before)
 const NewRequestForm = ({ onSubmit, onCancel }) => {
     const [requestType, setRequestType] = useState('Blood');
     const [formData, setFormData] = useState({
@@ -228,56 +287,9 @@ const NewRequestForm = ({ onSubmit, onCancel }) => {
                 </button>
             </div>
         </form>
+        
     );
 };
 
-// ✅ Request List Component
-const RequestList = ({ requests, onCancel }) => (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        {requests.length === 0 ? (
-            <div className="px-4 py-5 sm:p-6 text-center text-gray-500">
-                No active requests found.
-            </div>
-        ) : (
-            <ul className="divide-y divide-gray-200">
-                {requests.map((request) => (
-                    <li key={request._id} className="py-4 hover:bg-gray-50 transition-colors duration-150 gap-10">
-                        <div className="px-4 sm:px-6">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm font-medium text-blue-600 truncate">
-                                    {request.type} Request ({request.bloodType || request.organ})
-                                </p>
-                                <div className="ml-2 flex-shrink-0 flex">
-                                    <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${request.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                            request.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                'bg-red-100 text-red-800'
-                                        }`}>
-                                        {request.status}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="mt-3 sm:flex sm:justify-between">
-                                <div className="sm:flex">
-                                    <p className="flex items-center text-sm text-gray-500">
-                                        Needed by: {request.neededBy || 'N/A'}
-                                    </p>
-                                </div>
-                                <div className="mt-3 flex items-center text-sm text-gray-500 sm:mt-0 space-x-4">
-                                    <button className="text-blue-600 hover:text-blue-800 hover:underline">
-                                        View Details
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </li>
-                ))}
-            </ul>
-        )}
-    </div>
-);
-
-// // Optional placeholder components:
-// const HistoryTable = () => <div className="text-gray-600">History tab coming soon...</div>;
-// const ProfileSection = () => <div className="text-gray-600">Profile section coming soon...</div>;
 
 export default RecipientDashboard;

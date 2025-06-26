@@ -1,112 +1,95 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { useState,useEffect } from 'react';
-// import PrivateRoute from './utils/PrivateRoutes';
-// import { 
-//   ProtectedRoute, 
-//   AdminRoute, 
-//   RecipientRoute, 
-//   DonorRoute, 
-//   HospitalRoute 
-// } from './utils/ProtectedRoute';
-import Home from './pages/Home';
+import { AuthProvider } from './context/AuthContext';
+
+import {
+  ProtectedRoute,
+  AdminRoute,
+  DonorRoute,
+  UserRoute
+} from './ProtectedRoute';
+
 import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
-// import Dashboard from './pages/userpages/Dashboard';
-import RecipientDashboard from './pages/userpages/RecipiantDashboard';
-// import NewRequest from './components/Request/NewRequest';
-// import Requests from './pages/userpages/Requests';
-import UserAppointment from './components/Appointment/UserAppointment';
-import UserProfile from './components/Profiles/UserProfile';
 import About from './pages/About';
 import Contact from './pages/Contact';
+
+// User
+import RecipientDashboard from './pages/userpages/RecipiantDashboard';
+import UserAppointment from './components/Appointment/UserAppointment';
+import UserProfile from './components/Profiles/UserProfile';
+
+// Admin
 import AdminDashboard from './pages/Admin/AdminDashboard';
-import HospitalDetails from './pages/Admin/HospitalDetails'
+import HospitalDetails from './pages/Admin/HospitalDetails';
 import BloodDonation from './pages/Admin/BloodDonation';
 import OrganDonor from './pages/Admin/OrganDonor';
-import Hospital from './pages/Hospital/Hospital'
-import BloodPage from './pages/Hospital/BloodPage'
-import OrganPage from './pages/Hospital/OrganPage';
-import DoctorPage from './pages/Hospital/DoctorPage';
-import Appointment from './pages/Hospital/Appointment';
-import Donor from './pages/Donors/Donor';
-import AppointmentManagement from './pages/Donors/Appointment';
-import Donation from './pages/Donors/Donation';
-import AdminLogin from './components/Auth/AdminLogin';
-// import Registration from './pages/Admin/Registration';
+import BloodPage from './pages/Admin/BloodPage';
+import OrganPage from './pages/Admin/OrganPage';
+import Inventory from './pages/Admin/Inventory';
 import AdminRequestsPage from './pages/Admin/AdminRequestsPage';
-// import UerRequest from '../../server/models/UerRequest';
 import Registration from './pages/Admin/Registration';
 
-// Protected Route Wrapper
-const PrivateRoute = ({ children }) => {
-  const { currentUser } = useAuth(); // Your auth hook/context
-  return currentUser ? children : <Navigate to="/login" />;
-};
+// Hospital
+import Hospital from './pages/Hospital/Hospital';
+import Appointment from './pages/Hospital/Appointment';
+
+// Donor
+import Donor from './pages/Donors/Donor';
+import DonorAppointment from './pages/Donors/Appointment';
+import Donation from './pages/Donors/Donation';
+import Pledge from './pages/Donors/pledge';
+import MyPledge from './pages/Donors/MyPledge';
+import MyRequests from './pages/userpages/MyRequests';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // Optionally validate token with backend
-      setIsLoggedIn(true);
-    }
-  }, []);
-
   return (
-    <AuthProvider> {/* Wrap with your auth provider */}
+    <AuthProvider>
       <Routes>
         {/* Public Routes */}
-        {/* <Route path="/" element={<Home />} /> */}
         <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        {/* <Route path="/adminlogin" element={<AdminLogin />} /> */}
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
 
-        {/* user */}
-        <Route path="/Recipiant-dashboard" element={<RecipientDashboard />} />
-        <Route path="/Recipiant-dashboard/Appointment" element={<UserAppointment />} />
-        <Route path="/Recipiant-dashboard/userprofile" element={<UserProfile />} />
-        <Route path="/About" element={<About />} />
-        <Route path="/Contact" element={<Contact />} />
+        {/* User Protected Routes */}
+        <Route path="/Recipiant-dashboard" element={<UserRoute />}>
+          <Route index element={<RecipientDashboard />} />
+          <Route path="appointment" element={<UserAppointment />} />
+          <Route path="userprofile" element={<UserProfile />} />
+          <Route path="myrequests" element={<MyRequests />} />
 
-        {/* admin */}
+        </Route>
 
-        <Route path="/Admin" element={<AdminDashboard />} />
-        <Route path="/Admin/hospital" element={<HospitalDetails />} />
-        <Route path="/Admin/blood" element={<BloodDonation />} />
-        <Route path="/Admin/organ" element={<OrganDonor />} />
-        <Route path="/Admin/registration" element={<Registration />} />
-        <Route path="/Admin/request" element={<AdminRequestsPage />} />
+        {/* Admin Protected Routes */}
+        <Route path="/admin" element={<AdminRoute />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="hospital" element={<HospitalDetails />} />
+          <Route path="blood" element={<BloodDonation />} />
+          <Route path="organ" element={<OrganDonor />} />
+          <Route path="registration" element={<Registration />} />
+          <Route path="request" element={<AdminRequestsPage />} />
+          <Route path="inventory" element={<Inventory />} />
+          <Route path="organinventory" element={<OrganPage />} />
+          <Route path="bloodinventory" element={<BloodPage />} />
+        </Route>
 
+        {/* Hospital Protected Routes */}
+        {/* <Route path="/hospital" element={<HospitalRoute />}>
+          <Route index element={<Hospital />} />
+          <Route path="appointment" element={<Appointment />} />
+        </Route> */}
 
-        {/* Hospital */}
+        {/* Donor Protected Routes */}
+        <Route path="/donor" element={<DonorRoute />}>
+          <Route index element={<Donor />} />
+          <Route path="appointments" element={<DonorAppointment />} />
+          <Route path="donation" element={<Donation />} />
+          <Route path="pledge" element={<Pledge />} />
+          <Route path="mypledge" element={<MyPledge />} />
 
-        <Route path="/hospital" element={<Hospital />} />
-        <Route path="/hospital/blood" element={<BloodPage />} />
-        <Route path="/hospital/organ" element={<OrganPage />} />
-        <Route path="/hospital/doctor" element={<DoctorPage />} />
-        <Route path="/hospital/appointment" element={<Appointment />} />
+        </Route>
 
-        {/*Donor*/}
-        <Route path="/donor" element={<Donor />} />
-        <Route path="/donor/appointment" element={<AppointmentManagement />} />
-        <Route path="/donor/donation" element={<Donation />} />
-
-
-
-
-        {/* Protected Routes */}
-        <Route
-          path="/Recipiant-dashboard/Appointment"
-          element={
-            <PrivateRoute>
-              <UserAppointment />
-            </PrivateRoute>
-          }
-        />
-
-        {/* 404 Page */}
+        {/* 404 Fallback */}
         <Route path="*" element={<h1>404 Not Found</h1>} />
       </Routes>
     </AuthProvider>

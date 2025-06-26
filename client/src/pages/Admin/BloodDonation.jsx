@@ -1,38 +1,181 @@
 import React, { useState, useEffect } from "react";
-import AdminHeader from '../../components/Header/AdminHeader'
-const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+import axios from "axios";
+import AdminHeader from '../../components/Header/AdminHeader';
 
-const donors = [
-    { id: 1, name: "Suresh Kumar", age: 32, bloodGroup: "A+" },
-    { id: 2, name: "Anjali Mehta", age: 25, bloodGroup: "O-" },
-    { id: 3, name: "Ravi Singh", age: 29, bloodGroup: "B+" },
-    { id: 4, name: "Pooja Sharma", age: 22, bloodGroup: "AB-" },
-    { id: 5, name: "Rahul Verma", age: 35, bloodGroup: "O+" },
-];
+const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 export default function BloodDonationCard() {
     const [selectedGroup, setSelectedGroup] = useState("");
-    const [filteredDonors, setFilteredDonors] = useState(donors);
+    const [donors, setDonors] = useState([]);
+    const [filteredDonors, setFilteredDonors] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [showRequestForm, setShowRequestForm] = useState(false);
+    const [selectedDonor, setSelectedDonor] = useState(null);
+    const [requestForm, setRequestForm] = useState({
+        needByDate: "",
+        needByTime: "",
+        purpose: ""
+    });
+
+    // Get hospital info from localStorage
+    const hospitalInfo = {
+        name: localStorage.getItem('name') || 'Unknown Hospital',
+        email: localStorage.getItem('email') || 'unknown@hospital.com'
+    };
+
+    useEffect(() => {
+        const fetchDonors = async () => {
+            try {
+                const response = await axios.get('http://localhost:8000/api/auth/hospitalmypledge', {
+                    params: {
+                        donationType: 'blood'
+                    }
+                });
+                console.log(response.data.data);
+                setDonors(response.data.data);
+                setFilteredDonors(response.data.data);
+                setLoading(false);
+            } catch (err) {
+                setError(err.response?.data?.message || err.message || 'Failed to fetch donors');
+                setLoading(false);
+            }
+        };
+
+        fetchDonors();
+    }, []);
 
     useEffect(() => {
         if (selectedGroup === "") {
             setFilteredDonors(donors);
         } else {
             setFilteredDonors(
-                donors.filter((donor) => donor.bloodGroup === selectedGroup)
+                donors.filter((donor) => donor.bloodType === selectedGroup)
             );
         }
-    }, [selectedGroup]);
+    }, [selectedGroup, donors]);
 
-    const handleBookAppointment = (donorId) => {
-        alert(`Booked appointment with donor ID: ${donorId}`);
+    const handleBookAppointment = (donor) => {
+        setSelectedDonor(donor);
+        setShowRequestForm(true);
+        // Pre-fill form with current date/time as default
+        const now = new Date();
+        const currentDate = now.toISOString().split('T')[0];
+        const currentTime = now.toTimeString().substring(0, 5);
+
+        setRequestForm({
+            needByDate: currentDate,
+            needByTime: currentTime,
+            purpose: ""
+        });
     };
+
+    const handleRequestSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (!selectedDonor) {
+                throw new Error("No donor selected");
+            }
+
+            const requestData = {
+                donorEmail: selectedDonor.email, // Donor's email (as per your schema)
+                hospitalEmail: hospitalInfo.email, // Hospital's email from localStorage
+                hospitalName: hospitalInfo.name, // Hospital's name from localStorage
+                needByDate: requestForm.needByDate,
+                needByTime: requestForm.needByTime,
+                purpose: requestForm.purpose,
+                bloodGroup: selectedDonor.bloodType,
+                donorName: selectedDonor.fullName,
+                donorPhone: selectedDonor.phone,
+                status: "pending" // Adding status field
+            };
+            console.log(requestData);
+
+            const response = await axios.post(
+                'http://localhost:8000/api/auth/bloodRequestDonor',
+                requestData
+            );
+
+            alert(`Blood request submitted successfully!`);
+            setShowRequestForm(false);
+            setRequestForm({
+                needByDate: "",
+                needByTime: "",
+                purpose: ""
+            });
+        } catch (err) {
+            alert(err.response?.data?.message || err.message || 'Failed to submit request');
+            console.error("Request submission error:", err);
+        }
+    };
+
+    const toggleDonorStatus = async (donorId, currentStatus) => {
+        try {
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+
+            const response = await axios.patch(
+                `http://localhost:8000/api/auth/updatedonorstatus/${donorId}`,
+                { status: newStatus }
+            );
+
+            // Update the local state to reflect the change
+            setDonors(donors.map(donor =>
+                donor._id === donorId ? { ...donor, status: newStatus } : donor
+            ));
+
+            alert(`Donor status updated to ${newStatus}`);
+        } catch (err) {
+            alert(err.response?.data?.message || err.message || 'Failed to update status');
+            console.error("Status update error:", err);
+        }
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return "Not available";
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+    };
+
+    if (loading) {
+        return (
+            <>
+                <AdminHeader />
+                <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+                </div>
+            </>
+        );
+    }
+
+    if (error) {
+        return (
+            <>
+                <AdminHeader />
+                <div className="bg-white shadow rounded-lg p-8 text-center max-w-2xl mx-auto mt-10">
+                    <div className="text-red-500 mb-4">
+                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold mb-4">Error Loading Donors</h2>
+                    <p className="text-gray-600 mb-6">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            </>
+        );
+    }
 
     return (
         <>
             <AdminHeader />
             <div className="p-6 max-w-4xl mx-auto">
                 <h1 className="text-2xl font-bold mb-4 text-red-600">Blood Donor List</h1>
+                <p className="text-sm text-gray-600 mb-4">Hospital: {hospitalInfo.name}</p>
 
                 <div className="mb-4">
                     <select
@@ -49,33 +192,129 @@ export default function BloodDonationCard() {
                     </select>
                 </div>
 
-                <ul className="space-y-2">
+                <ul className="space-y-4">
                     {filteredDonors.length === 0 ? (
                         <p className="text-gray-500">No donors available for selected group.</p>
                     ) : (
                         filteredDonors.map((donor) => (
                             <li
-                                key={donor.id}
-                                className="flex justify-between items-center border-b py-2"
+                                key={donor._id}
+                                className="border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
                             >
-                                <div>
-                                    <span className="font-medium">{donor.name}</span>{" "}
-                                    <span className="text-sm text-gray-500">({donor.bloodGroup})</span>
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <div className="flex items-center">
+                                            <h3 className="font-medium text-lg">{donor.fullName}</h3>
+                                            <span className={`ml-2 px-2 py-1 text-xs rounded-full ${donor.status === 'active'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                {donor.status || 'active'}
+                                            </span>
+                                        </div>
+                                        <div className="text-sm text-gray-600 mt-1">
+                                            <p>Blood Type: <span className="font-semibold">{donor.bloodType}</span></p>
+                                            <p>Last Donation: <span className="font-semibold">{formatDate(donor.lastDonationDate)}</span></p>
+                                            <p>Contact: <span className="font-semibold">{donor.phone}</span></p>
+                                            <p>Address: <span className="font-semibold">{donor.address}, {donor.city}, {donor.state} - {donor.pincode}</span></p>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col space-y-2">
+                                        <button
+                                            onClick={() => handleBookAppointment(donor)}
+                                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+                                        >
+                                            Request Blood
+                                        </button>
+                                        <button
+                                            onClick={() => toggleDonorStatus(donor._id, donor.status || 'active')}
+                                            className={`px-4 py-2 rounded-lg transition ${donor.status === 'active' || !donor.status
+                                                ? 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                }`}
+                                        >
+                                            {donor.status === 'active' || !donor.status ? 'Deactivate' : 'Activate'}
+                                        </button>
+                                    </div>
                                 </div>
-                                <button
-                                    onClick={() => handleBookAppointment(donor.id)}
-                                    className="text-red-600 text-2xl font-bold hover:scale-110 transition"
-                                    aria-label={`Book appointment with ${donor.name}`}
-                                >
-                                    +
-                                </button>
                             </li>
                         ))
                     )}
                 </ul>
+
+                {/* Request Blood Form Modal */}
+                {showRequestForm && selectedDonor && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                            <h2 className="text-xl font-bold mb-4">Request Blood from {selectedDonor.fullName}</h2>
+                            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                                <p className="text-sm"><span className="font-semibold">Hospital:</span> {hospitalInfo.name}</p>
+                                <p className="text-sm"><span className="font-semibold">Donor Blood Group:</span> {selectedDonor.bloodType}</p>
+                                <p className="text-sm"><span className="font-semibold">Donor Contact:</span> {selectedDonor.phone}</p>
+                                <p className="text-sm"><span className="font-semibold">Status:</span>
+                                    <span className={`ml-1 px-2 py-1 text-xs rounded-full ${selectedDonor.status === 'active'
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                        }`}>
+                                        {selectedDonor.status || 'active'}
+                                    </span>
+                                </p>
+                            </div>
+                            <form onSubmit={handleRequestSubmit}>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Needed By Date*</label>
+                                        <input
+                                            type="date"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                            value={requestForm.needByDate}
+                                            onChange={(e) => setRequestForm({ ...requestForm, needByDate: e.target.value })}
+                                            min={new Date().toISOString().split('T')[0]} // Disable past dates
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Needed By Time*</label>
+                                        <input
+                                            type="time"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                            value={requestForm.needByTime}
+                                            onChange={(e) => setRequestForm({ ...requestForm, needByTime: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Purpose*</label>
+                                        <textarea
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                            rows={3}
+                                            value={requestForm.purpose}
+                                            onChange={(e) => setRequestForm({ ...requestForm, purpose: e.target.value })}
+                                            placeholder="Explain why you need the blood (e.g., surgery, treatment)"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="mt-6 flex justify-end space-x-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowRequestForm(false)}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                    >
+                                        Submit Request
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
             </div>
-
         </>
-
     );
 }

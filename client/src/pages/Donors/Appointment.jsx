@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const AppointmentManagement = () => {
+const DonorAppointment = () => {
     // Sample appointment data with only essential fields
     const [appointments, setAppointments] = useState([
         {
@@ -225,4 +225,4 @@ const AppointmentManagement = () => {
     );
 };
 
-export default AppointmentManagement;
+export default DonorAppointment;

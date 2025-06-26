@@ -41,11 +41,12 @@ const UserHeader = () => {
                         >
                             Home
                         </Link>
+
                         <Link
-                            to="/Recipiant-dashboard/Appointment"
+                            to="/Recipiant-dashboard/myrequests"
                             className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-600"
                         >
-                            Appointments
+                            My request
                         </Link>
                         <Link
                             to="/Contact"

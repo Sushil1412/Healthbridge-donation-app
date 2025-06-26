@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import HospitalHeader from '../../components/Header/HospitalHeader';
+import AdminHeader from '../../components/Header/AdminHeader';
 import axios from 'axios';
 
-const BloodDonationPage = () => {
-    const [bloodGroups, setBloodGroups] = useState([]);
+const OrganPage = () => {
+    const [organs, setOrgans] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedBlood, setSelectedBlood] = useState(null);
+    const [selectedOrgan, setSelectedOrgan] = useState(null);
     const [showRequestModal, setShowRequestModal] = useState(false);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [updateAmount, setUpdateAmount] = useState(1);
     const [requestDetails, setRequestDetails] = useState({
         quantity: 1,
-        neededBy: '', // Changed from urgency to neededBy date
+        neededBy: '',
     });
     const [hospitalEmail, setHospitalEmail] = useState('');
+    const [requests, setRequests] = useState([]);
+    const [requestsLoading, setRequestsLoading] = useState(true);
 
     // Get hospital email from local storage
     useEffect(() => {
@@ -24,41 +26,53 @@ const BloodDonationPage = () => {
         }
     }, []);
 
-    // Fetch blood inventory data from API
+    // Fetch organ inventory data from API
     useEffect(() => {
-        const fetchBloodInventory = async () => {
+        const fetchOrganInventory = async () => {
             if (!hospitalEmail) return;
 
             try {
-                const response = await axios.get(`http://localhost:8000/api/auth/hospitalinventory?hospitalEmail=${hospitalEmail}`);
-                // const name = localStorage.getItem('email');
-                // console.log(name);
-                const transformedData = response.data.map(item => ({
-                    type: item.bloodType,
-                    units: item.units
-                }));
-                setBloodGroups(transformedData);
+                const response = await axios.get(`http://localhost:8000/api/auth/organinventory?hospitalEmail=${hospitalEmail}`);
+                setOrgans(response.data);
                 setLoading(false);
             } catch (err) {
                 setError(err.message);
                 setLoading(false);
-                console.error('Error fetching blood inventory:', err);
+                console.error('Error fetching organ inventory:', err);
             }
         };
 
-        fetchBloodInventory();
-    }, [hospitalEmail]);
+        fetchOrganInventory();
+    }, [hospitalEmail, showUpdateModal]);
 
-    const handleRequest = (bloodType) => {
-        setSelectedBlood(bloodType);
+    // Fetch organ requests made by this hospital
+    useEffect(() => {
+        const fetchOrganRequests = async () => {
+            if (!hospitalEmail) return;
+
+            try {
+                const response = await axios.get(`http://localhost:8000/api/auth/hospitalorganrequests?hospitalEmail=${hospitalEmail}&type=organ`);
+                setRequests(response.data);
+                setRequestsLoading(false);
+            } catch (err) {
+                console.error('Error fetching organ requests:', err);
+                setRequestsLoading(false);
+            }
+        };
+
+        fetchOrganRequests();
+    }, [hospitalEmail, showRequestModal]);
+
+    const handleRequest = (organType) => {
+        setSelectedOrgan(organType);
         setShowRequestModal(true);
     };
 
-    const handleUpdate = (bloodType) => {
-        setSelectedBlood(bloodType);
-        const selectedGroup = bloodGroups.find(group => group.type === bloodType);
-        if (selectedGroup) {
-            setUpdateAmount(selectedGroup.units);
+    const handleUpdate = (organType) => {
+        setSelectedOrgan(organType);
+        const selectedOrganItem = organs.find(organ => organ.organType === organType);
+        if (selectedOrganItem) {
+            setUpdateAmount(selectedOrganItem.quantity);
         }
         setShowUpdateModal(true);
     };
@@ -66,14 +80,14 @@ const BloodDonationPage = () => {
     const handleSubmitRequest = async (e) => {
         e.preventDefault();
         try {
-            const name = localStorage.getItem('name');
-            // console.log(name);
-            await axios.post('http://localhost:8000/api/auth/hospitalrequest', {
+            const hospitalName = localStorage.getItem('name');
+            await axios.patch('http://localhost:8000/api/auth/hospitalrequestsubmit', {
                 hospitalEmail: hospitalEmail,
-                bloodType: selectedBlood,
-                hospitalName: name,
+                requestType: 'organ',
+                organType: selectedOrgan,
                 quantity: requestDetails.quantity,
-                neededBy: requestDetails.neededBy // Changed from urgency to neededBy
+                hospitalName: hospitalName,
+                neededBy: requestDetails.neededBy
             });
 
             setShowRequestModal(false);
@@ -83,7 +97,7 @@ const BloodDonationPage = () => {
             });
             alert('Your request has been sent to the administrator.');
         } catch (err) {
-            console.error('Error submitting blood request:', err);
+            console.error('Error submitting organ request:', err);
             alert('Failed to submit request. Please try again.');
         }
     };
@@ -91,63 +105,82 @@ const BloodDonationPage = () => {
     const handleSubmitUpdate = async (e) => {
         e.preventDefault();
         try {
-            const name = localStorage.getItem('hospitalname');
-            await axios.post('http://localhost:8000/api/auth/inventoryupdate', {
-                name,
+            const hospitalName = localStorage.getItem('name');
+            await axios.post('http://localhost:8000/api/auth/organinventoryupdate', {
                 hospitalEmail: hospitalEmail,
-                bloodType: selectedBlood,
-                quantity: parseInt(updateAmount),
+                hospitalName: hospitalName,
+                organType: selectedOrgan,
+                quantity: parseInt(updateAmount)
             });
 
-            const updatedBloodGroups = bloodGroups.map(group => {
-                if (group.type === selectedBlood) {
+            const updatedOrgans = organs.map(organ => {
+                if (organ.organType === selectedOrgan) {
                     return {
-                        ...group,
+                        ...organ,
                         units: parseInt(updateAmount)
                     };
                 }
-                return group;
+                return organ;
             });
 
-            setBloodGroups(updatedBloodGroups);
+            setOrgans(updatedOrgans);
             setShowUpdateModal(false);
             setUpdateAmount(1);
-            alert('Blood inventory updated successfully!');
+            alert('Organ inventory updated successfully!');
         } catch (err) {
-            console.error('Error updating inventory:', err);
+            console.error('Error updating organ inventory:', err);
             alert('Failed to update inventory. Please try again.');
         }
     };
 
-    // ... (loading and error states remain the same)
+    const getStatusColor = (status) => {
+        switch (status.toLowerCase()) {
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'approved':
+                return 'bg-green-100 text-green-800';
+            case 'rejected':
+                return 'bg-red-100 text-red-800';
+            case 'completed':
+                return 'bg-blue-100 text-blue-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+    };
 
     return (
         <>
-            <HospitalHeader />
+            <AdminHeader />
             <div className="min-h-screen bg-gray-100 p-4">
                 <div className="max-w-6xl mx-auto">
-                    <h1 className="text-2xl font-bold text-gray-800 mb-6">Blood Inventory</h1>
+                    <h1 className="text-2xl font-bold text-gray-800 mb-6">Organ Inventory</h1>
 
-                    {/* Blood Availability Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {bloodGroups.map((group, index) => (
+                    {/* Organ Availability Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-8">
+                        {organs.map((organ, index) => (
                             <div key={index} className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
                                 <div className="flex-grow">
                                     <div className="flex justify-between items-center mb-2">
-                                        <span className="text-2xl font-semibold text-gray-700">{group.type}</span>
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${group.units > 3 ? 'bg-green-100 text-green-800' :
-                                            group.units > 0 ? 'bg-yellow-100 text-yellow-800' :
+                                        <span className="text-xl font-semibold text-gray-700">{organ.organType}</span>
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${organ.quantity > 3 ? 'bg-green-100 text-green-800' :
+                                            organ.units > 0 ? 'bg-yellow-100 text-yellow-800' :
                                                 'bg-red-100 text-red-800'
                                             }`}>
-                                            {group.units} units
+                                            {organ.quantity} available
                                         </span>
                                     </div>
                                 </div>
                                 <div className="flex justify-between mt-2">
                                     <button
-                                        onClick={() => handleUpdate(group.type)}
+                                        onClick={() => handleUpdate(organ.organType)}
                                         className="hover:bg-blue-100 text-blue-600 rounded-full p-2 transition-colors duration-200"
-                                        aria-label={`Update ${group.type} blood stock`}
+                                        aria-label={`Update ${organ.organType} stock`}
                                         title="Update stock"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -155,9 +188,9 @@ const BloodDonationPage = () => {
                                         </svg>
                                     </button>
                                     <button
-                                        onClick={() => handleRequest(group.type)}
+                                        onClick={() => handleRequest(organ.organType)}
                                         className="hover:bg-red-100 text-red-600 rounded-full p-2 transition-colors duration-200"
-                                        aria-label={`Request ${group.type} blood`}
+                                        aria-label={`Request ${organ.organType}`}
                                         title="Request from admin"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -168,13 +201,52 @@ const BloodDonationPage = () => {
                             </div>
                         ))}
                     </div>
+
+                    {/* Organ Request History Section */}
+                    <div className="bg-white rounded-lg shadow-sm p-6">
+                        <h2 className="text-xl font-bold text-gray-800 mb-4">Your Organ Requests</h2>
+
+                        {requestsLoading ? (
+                            <p>Loading requests...</p>
+                        ) : requests.length === 0 ? (
+                            <p className="text-gray-500">No organ requests made yet.</p>
+                        ) : (
+                            <div className="space-y-4">
+                                {requests.map((request, index) => (
+                                    <div key={index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h3 className="font-medium text-gray-800">
+                                                    {request.organType} - {request.quantity} units
+                                                </h3>
+                                                <p className="text-sm text-gray-500">
+                                                    Requested on: {formatDate(request.createdAt)}
+                                                </p>
+                                                <p className="text-sm text-gray-500">
+                                                    Needed by: {formatDate(request.neededBy)}
+                                                </p>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
+                                                {request.status}
+                                            </span>
+                                        </div>
+                                        {request.adminComment && (
+                                            <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-600">
+                                                <strong>Admin Note:</strong> {request.adminComment}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Request Modal - Simplified to only quantity and neededBy */}
+                {/* Request Modal */}
                 {showRequestModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-4">Request Blood ({selectedBlood})</h2>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-4">Request Organ ({selectedOrgan})</h2>
 
                             <form onSubmit={handleSubmitRequest}>
                                 <div className="mb-4">
@@ -203,7 +275,7 @@ const BloodDonationPage = () => {
                                         value={requestDetails.neededBy}
                                         onChange={(e) => setRequestDetails({ ...requestDetails, neededBy: e.target.value })}
                                         required
-                                        min={new Date().toISOString().split('T')[0]} // Prevent past dates
+                                        min={new Date().toISOString().split('T')[0]}
                                     />
                                 </div>
 
@@ -227,12 +299,12 @@ const BloodDonationPage = () => {
                     </div>
                 )}
 
-                {/* Update Modal remains the same */}
+                {/* Update Modal */}
                 {showUpdateModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-4">Update Blood Stock ({selectedBlood})</h2>
-                            <p className="text-gray-600 mb-4">Current available units: {bloodGroups.find(b => b.type === selectedBlood)?.units || 0}</p>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-4">Update Organ Stock ({selectedOrgan})</h2>
+                            <p className="text-gray-600 mb-4">Current available units: {organs.find(o => o.organType === selectedOrgan)?.quantity || 0}</p>
 
                             <form onSubmit={handleSubmitUpdate}>
                                 <div className="mb-6">
@@ -256,7 +328,7 @@ const BloodDonationPage = () => {
                                                 const value = parseInt(e.target.value) || 0;
                                                 setUpdateAmount(Math.max(0, value));
                                             }}
-                                            min="0"
+                                            min="1"
                                         />
                                         <button
                                             type="button"
@@ -295,4 +367,4 @@ const BloodDonationPage = () => {
     );
 };
 
-export default BloodDonationPage;
+export default OrganPage;

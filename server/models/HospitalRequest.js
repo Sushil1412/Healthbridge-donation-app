@@ -11,10 +11,23 @@ const hospitalRequestSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    requestType: {  // New field: 'blood' or 'organ'
+        type: String,
+        required: true,
+        enum: ['Blood', 'organ'],
+        default: 'blood'
+    },
     bloodType: {
         type: String,
         required: true,
-        enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+        enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'null'],
+        default: 'null'
+    },
+    organType: {
+        type: String,
+        required: function () { return this.requestType === 'organ'; },
+        enum: ['Heart', 'Kidney', 'Liver', 'Lung', 'Pancreas', 'Cornea', 'Skin', 'Bone Marrow', 'other', 'null'],
+        default: 'null',
     },
     quantity: {
         type: Number,

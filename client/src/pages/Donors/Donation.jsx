@@ -1,317 +1,252 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import AdminHeader from '../../components/Header/AdminHeader';
 import DonorHeader from '../../components/Header/DonorHeader';
 
-export default function OrganDonationForm() {
-    const [formData, setFormData] = useState({
-        fullName: '',
-        dateOfBirth: '',
-        idNumber: '',
-        bloodType: '',
-        contactNumber: '',
-        email: '',
-        address: '',
-        nextOfKin: '',
-        nextOfKinContact: '',
-        organsToDonate: [],
-        consent: false
-    });
+const AdminHospitalRequests = () => {
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [updatingId, setUpdatingId] = useState(null);
+    const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'history'
 
-    const [submitted, setSubmitted] = useState(false);
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const email = localStorage.getItem('email');
+                const response = await axios.get(`http://localhost:8000/api/auth/bloodrequestfordonor?email=${email}`);
+                const sortedRequests = response.data.data.sort((a, b) =>
+                    new Date(b.createdAt) - new Date(a.createdAt)
+                );
+                console.log(sortedRequests);
+                setRequests(sortedRequests);
+            } catch (err) {
+                setError(err.response?.data?.message || 'Failed to fetch requests');
+                console.error('Fetch error:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-    };
+        fetchData();
+    }, []);
 
-    const handleOrganSelection = (e) => {
-        const { value, checked } = e.target;
-        if (checked) {
-            setFormData(prev => ({
-                ...prev,
-                organsToDonate: [...prev.organsToDonate, value]
-            }));
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                organsToDonate: prev.organsToDonate.filter(organ => organ !== value)
-            }));
+    const handleStatusChange = async (requestId, newStatus) => {
+        try {
+            setUpdatingId(requestId);
+
+            // Optimistic update
+            setRequests(prevRequests =>
+                prevRequests.map(request =>
+                    request._id === requestId
+                        ? { ...request, status: newStatus }
+                        : request
+                ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            );
+            // console.log(requestId);
+            await axios.patch(
+                `http://localhost:8000/api/auth/upadateBloodrequestdonor`,
+                { requestId, status: newStatus }
+            );
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to update request status');
+            console.error('Update error:', err);
+
+            // Revert on error by refetching
+            const response = await axios.get(`http://localhost:8000/api/auth/bloodrequestfordonor?email=${email}`);
+            const sortedRequests = response.data.sort((a, b) =>
+                new Date(b.createdAt) - new Date(a.createdAt)
+            );
+            setRequests(sortedRequests);
+        } finally {
+            setUpdatingId(null);
         }
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setSubmitted(true);
+    const formatDate = (dateString) => {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
     };
 
-    const organsList = [
-        'Heart', 'Lungs', 'Liver', 'Kidneys', 'Pancreas',
-        'Intestines', 'Corneas', 'Skin', 'Bone', 'Tendons'
-    ];
+    // Filter requests based on active tab
+    const pendingRequests = requests.filter(request => request.status === 'pending');
+    const historyRequests = requests.filter(request => request.status !== 'pending');
 
-    if (submitted) {
+    return (
+        <>
+            <DonorHeader />
+            <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+                <div className="max-w-7xl mx-auto">
+                    <h1 className="text-2xl font-bold text-gray-800 mb-6">Hospital Blood Requests</h1>
 
-
-        return (
-            <>
-                <DonorHeader />
-                <div className="max-w-2xl mx-auto p-6 bg-red-50 rounded-lg shadow-lg mt-10">
-                    <h2 className="text-2xl font-bold text-red-800 mb-6">Thank You for Your Generous Decision</h2>
-                    <p className="text-red-700 mb-6">Your organ donation registration has been received. Here are your details:</p>
-
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <ul className="space-y-3">
-                            <li className="border-b border-red-100 pb-2">
-                                <span className="font-semibold text-red-700">Full Name:</span> {formData.fullName}
-                            </li>
-                            <li className="border-b border-red-100 pb-2">
-                                <span className="font-semibold text-red-700">Date of Birth:</span> {formData.dateOfBirth}
-                            </li>
-                            <li className="border-b border-red-100 pb-2">
-                                <span className="font-semibold text-red-700">ID Number:</span> {formData.idNumber}
-                            </li>
-                            <li className="border-b border-red-100 pb-2">
-                                <span className="font-semibold text-red-700">Blood Type:</span> {formData.bloodType}
-                            </li>
-                            <li className="border-b border-red-100 pb-2">
-                                <span className="font-semibold text-red-700">Contact Number:</span> {formData.contactNumber}
-                            </li>
-                            <li className="border-b border-red-100 pb-2">
-                                <span className="font-semibold text-red-700">Email:</span> {formData.email}
-                            </li>
-                            <li className="border-b border-red-100 pb-2">
-                                <span className="font-semibold text-red-700">Address:</span> {formData.address}
-                            </li>
-                            <li className="border-b border-red-100 pb-2">
-                                <span className="font-semibold text-red-700">Next of Kin:</span> {formData.nextOfKin}
-                            </li>
-                            <li className="border-b border-red-100 pb-2">
-                                <span className="font-semibold text-red-700">Next of Kin Contact:</span> {formData.nextOfKinContact}
-                            </li>
-                            <li className="border-b border-red-100 pb-2">
-                                <span className="font-semibold text-red-700">Organs to Donate:</span> {formData.organsToDonate.join(', ')}
-                            </li>
-                        </ul>
-
-                        <div className="mt-6">
-                            <p className="text-red-700 font-semibold">Your decision to donate organs after death will save lives.</p>
-                            <p className="text-red-600 mt-2">We recommend informing your family about this decision.</p>
-                        </div>
-                    </div>
-                </div>
-            </>
-        );
-    }
-
-    return (<>
-        <DonorHeader />
-        <div className="max-w-2xl mx-auto p-6 bg-red-50 rounded-lg shadow-lg mt-10">
-            <h1 className="text-3xl font-bold text-red-800 mb-2">Organ Donation Registration</h1>
-            <p className="text-red-700 mb-6">Register your decision to donate organs after death</p>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-red-700 font-bold mb-2" htmlFor="fullName">
-                            Full Name
-                        </label>
-                        <input
-                            type="text"
-                            id="fullName"
-                            name="fullName"
-                            value={formData.fullName}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-red-700 font-bold mb-2" htmlFor="dateOfBirth">
-                            Date of Birth
-                        </label>
-                        <input
-                            type="date"
-                            id="dateOfBirth"
-                            name="dateOfBirth"
-                            value={formData.dateOfBirth}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                            required
-                        />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-red-700 font-bold mb-2" htmlFor="idNumber">
-                            ID/Passport Number
-                        </label>
-                        <input
-                            type="text"
-                            id="idNumber"
-                            name="idNumber"
-                            value={formData.idNumber}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-red-700 font-bold mb-2" htmlFor="bloodType">
-                            Blood Type
-                        </label>
-                        <select
-                            id="bloodType"
-                            name="bloodType"
-                            value={formData.bloodType}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                            required
-                        >
-                            <option value="">Select Blood Type</option>
-                            <option value="A+">A+</option>
-                            <option value="A-">A-</option>
-                            <option value="B+">B+</option>
-                            <option value="B-">B-</option>
-                            <option value="AB+">AB+</option>
-                            <option value="AB-">AB-</option>
-                            <option value="O+">O+</option>
-                            <option value="O-">O-</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-red-700 font-bold mb-2" htmlFor="contactNumber">
-                            Contact Number
-                        </label>
-                        <input
-                            type="tel"
-                            id="contactNumber"
-                            name="contactNumber"
-                            value={formData.contactNumber}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-red-700 font-bold mb-2" htmlFor="email">
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                        />
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-red-700 font-bold mb-2" htmlFor="address">
-                        Address
-                    </label>
-                    <textarea
-                        id="address"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                        rows="3"
-                    />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-red-700 font-bold mb-2" htmlFor="nextOfKin">
-                            Next of Kin
-                        </label>
-                        <input
-                            type="text"
-                            id="nextOfKin"
-                            name="nextOfKin"
-                            value={formData.nextOfKin}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-red-700 font-bold mb-2" htmlFor="nextOfKinContact">
-                            Next of Kin Contact
-                        </label>
-                        <input
-                            type="tel"
-                            id="nextOfKinContact"
-                            name="nextOfKinContact"
-                            value={formData.nextOfKinContact}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                            required
-                        />
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-red-700 font-bold mb-4">Organs to Donate</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {organsList.map(organ => (
-                            <div key={organ} className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    id={organ}
-                                    name="organsToDonate"
-                                    value={organ}
-                                    onChange={handleOrganSelection}
-                                    className="h-4 w-4 text-red-600 focus:ring-red-500 border-red-300 rounded"
-                                />
-                                <label htmlFor={organ} className="ml-2 text-red-700">
-                                    {organ}
-                                </label>
+                    {error && (
+                        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm text-red-700">{error}</p>
+                                </div>
                             </div>
-                        ))}
-                    </div>
-                </div>
+                        </div>
+                    )}
 
-                <div className="flex items-start">
-                    <div className="flex items-center h-5">
-                        <input
-                            type="checkbox"
-                            id="consent"
-                            name="consent"
-                            checked={formData.consent}
-                            onChange={handleChange}
-                            className="h-4 w-4 text-red-600 focus:ring-red-500 border-red-300 rounded"
-                            required
-                        />
+                    {/* Tab Navigation */}
+                    <div className="border-b border-gray-200 mb-6">
+                        <nav className="-mb-px flex space-x-8">
+                            <button
+                                onClick={() => setActiveTab('pending')}
+                                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'pending'
+                                    ? 'border-red-500 text-red-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Pending Requests
+                                {pendingRequests.length > 0 && (
+                                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        {pendingRequests.length}
+                                    </span>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('history')}
+                                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'history'
+                                    ? 'border-red-500 text-red-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Request History
+                            </button>
+                        </nav>
                     </div>
-                    <div className="ml-3">
-                        <label htmlFor="consent" className="text-red-700">
-                            I hereby declare that I voluntarily consent to donate my organs after my death for the purpose of transplantation to save lives. I understand that this decision can be revoked at any time.
-                        </label>
-                    </div>
-                </div>
 
-                <div className="flex justify-center">
-                    <button
-                        type="submit"
-                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline text-lg"
-                    >
-                        Register as Organ Donor
-                    </button>
+                    {loading ? (
+                        <div className="flex justify-center items-center h-64">
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+                        </div>
+                    ) : (
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {activeTab === 'pending' ? (
+                                pendingRequests.length === 0 ? (
+                                    <div className="col-span-full bg-white p-8 rounded-lg shadow text-center">
+                                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <h3 className="mt-2 text-lg font-medium text-gray-900">No pending requests</h3>
+                                        <p className="mt-1 text-sm text-gray-500">There are currently no new hospital requests.</p>
+                                    </div>
+                                ) : (
+                                    pendingRequests.map(request => (
+                                        <RequestCard
+                                            key={request._id}
+                                            request={request}
+                                            updatingId={updatingId}
+                                            onApprove={() => handleStatusChange(request._id, 'accepted')}
+                                            onReject={() => handleStatusChange(request._id, 'rejected')}
+                                            formatDate={formatDate}
+                                        />
+                                    ))
+                                )
+                            ) : (
+                                historyRequests.length === 0 ? (
+                                    <div className="col-span-full bg-white p-8 rounded-lg shadow text-center">
+                                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <h3 className="mt-2 text-lg font-medium text-gray-900">No request history</h3>
+                                        <p className="mt-1 text-sm text-gray-500">There are no historical requests to display.</p>
+                                    </div>
+                                ) : (
+                                    historyRequests.map(request => (
+                                        <RequestCard
+                                            key={request._id}
+                                            request={request}
+                                            isHistory={true}
+                                            formatDate={formatDate}
+                                        />
+                                    ))
+                                )
+                            )}
+                        </div>
+                    )}
                 </div>
-            </form>
-        </div>
-    </>
+            </div>
+        </>
     );
-}
+};
+
+const RequestCard = ({ request, updatingId, onApprove, onReject, isHistory = false, formatDate }) => {
+    const statusColors = {
+        approved: 'bg-green-100 text-green-800',
+        pending: 'bg-yellow-100 text-yellow-800',
+        rejected: 'bg-red-100 text-red-800'
+    };
+
+    return (
+        <div className={`bg-white rounded-lg shadow overflow-hidden ${request.status === 'approved' ? 'border-l-4 border-green-500' :
+            request.status === 'rejected' ? 'border-l-4 border-red-500' :
+                'border-l-4 border-yellow-500'
+            }`}>
+            <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[request.status]}`}>
+                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                        {formatDate(request.createdAt)}
+                    </span>
+                </div>
+
+                <h3 className="text-lg font-bold text-gray-900 mb-1">{request.hospitalName}</h3>
+                <p className="text-gray-600 mb-2">
+                    <span className="font-medium">Blood Type:</span> {request.bloodGroup}
+                </p>
+                <p className="text-gray-600 mb-4">
+                    <span className="font-medium">Needed by:</span> {formatDate(request.needByDate)}
+                </p>
+                <p className="text-gray-600 mb-4">
+                    <span className="font-medium">Needed by:</span> {(request.needByTime)}
+                </p>
+                <p className="text-gray-600 mb-4">
+                    <span className="font-medium">Purpose:</span> {request.purpose}
+                </p>
+                <p className="text-gray-600 mb-4">
+                    <span className="font-medium">Hospital Name:City Hospital</span>
+                </p>
+
+                {request.notes && (
+                    <div className="bg-gray-50 p-3 rounded-md mb-4">
+                        <p className="text-sm text-gray-700">{request.notes}</p>
+                    </div>
+                )}
+
+                {!isHistory && (
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={onApprove}
+                            disabled={updatingId === request._id}
+                            className={`flex-1 py-2 px-4 rounded-md text-white font-medium ${updatingId === request._id ? 'bg-green-400' : 'bg-green-600 hover:bg-green-700'
+                                }`}
+                        >
+                            {updatingId === request._id ? 'Approving...' : 'Approve'}
+                        </button>
+                        <button
+                            onClick={onReject}
+                            disabled={updatingId === request._id}
+                            className={`flex-1 py-2 px-4 rounded-md text-white font-medium ${updatingId === request._id ? 'bg-gray-400' : 'bg-gray-600 hover:bg-gray-700'
+                                }`}
+                        >
+                            {updatingId === request._id ? 'Rejecting...' : 'Reject'}
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default AdminHospitalRequests;

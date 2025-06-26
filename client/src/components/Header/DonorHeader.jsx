@@ -27,7 +27,7 @@ const DonorHeader = () => {
                 <div className="flex justify-between h-16 items-center">
                     {/* Logo */}
                     <div className="flex-shrink-0 flex items-center">
-                        <Link to="/Admin" className="text-xl font-bold text-red-600">
+                        <Link to="/donor" className="text-xl font-bold text-red-600">
                             LifeShare
                         </Link>
                     </div>
@@ -41,11 +41,18 @@ const DonorHeader = () => {
                         >
                             Home
                         </Link>
+
                         <Link
-                            to="/donor/appointment"
+                            to="/donor/donation"
                             className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-600"
                         >
-                            Appointments
+                            Donation
+                        </Link>
+                        <Link
+                            to="/donor/mypledge"
+                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-600"
+                        >
+                            My Pledge
                         </Link>
 
 

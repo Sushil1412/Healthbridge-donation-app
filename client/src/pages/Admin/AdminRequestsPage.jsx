@@ -4,78 +4,48 @@ import AdminHeader from '../../components/Header/AdminHeader'
 
 const AdminRequestsPage = () => {
     const [requests, setRequests] = useState([]);
-    const [hospitalRequests, setHospitalRequests] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [hospitalLoading, setHospitalLoading] = useState(true);
     const [error, setError] = useState('');
     const [updatingId, setUpdatingId] = useState(null);
-    const [activeTab, setActiveTab] = useState('new'); // 'new', 'history', or 'hospital'
+    const [activeTab, setActiveTab] = useState('new'); // 'new' or 'history'
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                setHospitalLoading(true);
-
-                // Fetch user requests
                 const userResponse = await axios.get('http://localhost:8000/api/auth/adminapplication');
                 const sortedUserRequests = userResponse.data.sort((a, b) =>
                     new Date(b.createdAt) - new Date(a.createdAt)
                 );
                 setRequests(sortedUserRequests);
-
-                // Fetch hospital requests
-                const hospitalResponse = await axios.get('http://localhost:8000/api/auth/hospitalrequests');
-                const sortedHospitalRequests = hospitalResponse.data.sort((a, b) =>
-                    new Date(b.createdAt) - new Date(a.createdAt)
-                );
-                setHospitalRequests(sortedHospitalRequests);
-
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to fetch requests');
                 console.error('Fetch error:', err);
             } finally {
                 setLoading(false);
-                setHospitalLoading(false);
             }
         };
 
         fetchData();
     }, []);
 
-    const handleStatusChange = async (requestId, newStatus, isHospitalRequest = false) => {
+    const handleStatusChange = async (requestId, newStatus) => {
         try {
             setUpdatingId(requestId);
 
-            if (isHospitalRequest) {
-                // Optimistic update for hospital requests
-                setHospitalRequests(prevRequests =>
-                    prevRequests.map(request =>
-                        request._id === requestId
-                            ? { ...request, status: newStatus }
-                            : request
-                    ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                );
+            // Optimistic update for user requests
+            setRequests(prevRequests =>
+                prevRequests.map(request =>
+                    request._id === requestId
+                        ? { ...request, status: newStatus }
+                        : request
+                ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            );
 
-                await axios.patch(
-                    `http://localhost:8000/api/auth/hospitalrequestupdate`,
-                    { requestId, status: newStatus }
-                );
-            } else {
-                // Optimistic update for user requests
-                setRequests(prevRequests =>
-                    prevRequests.map(request =>
-                        request._id === requestId
-                            ? { ...request, status: newStatus }
-                            : request
-                    ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                );
-
-                await axios.patch(
-                    `http://localhost:8000/api/auth/adminapplicationupdate`,
-                    { requestId, status: newStatus }
-                );
-            }
+            await axios.patch(
+                `http://localhost:8000/api/auth/adminapplicationupdate`,
+                { requestId, status: newStatus }
+            );
 
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update request status');
@@ -87,12 +57,6 @@ const AdminRequestsPage = () => {
                 new Date(b.createdAt) - new Date(a.createdAt)
             );
             setRequests(sortedUserRequests);
-
-            const hospitalResponse = await axios.get('http://localhost:8000/api/auth/hospitalrequests');
-            const sortedHospitalRequests = hospitalResponse.data.sort((a, b) =>
-                new Date(b.createdAt) - new Date(a.createdAt)
-            );
-            setHospitalRequests(sortedHospitalRequests);
         } finally {
             setUpdatingId(null);
         }
@@ -106,8 +70,6 @@ const AdminRequestsPage = () => {
     // Filter requests based on active tab
     const newRequests = requests.filter(request => request.status === 'Pending');
     const historyRequests = requests.filter(request => request.status !== 'Pending');
-    const pendingHospitalRequests = hospitalRequests.filter(request => request.status === 'Pending');
-    const hospitalRequestHistory = hospitalRequests.filter(request => request.status !== 'Pending');
 
     return (
         <>
@@ -149,32 +111,18 @@ const AdminRequestsPage = () => {
                                 )}
                             </button>
                             <button
-                                onClick={() => setActiveTab('hospital')}
-                                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'hospital'
-                                    ? 'border-red-500 text-red-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                            >
-                                Hospital Requests
-                                {pendingHospitalRequests.length > 0 && (
-                                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        {pendingHospitalRequests.length}
-                                    </span>
-                                )}
-                            </button>
-                            <button
                                 onClick={() => setActiveTab('history')}
                                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'history'
                                     ? 'border-red-500 text-red-600'
                                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                     }`}
                             >
-                                Request History
+                                User History
                             </button>
                         </nav>
                     </div>
 
-                    {loading && hospitalLoading ? (
+                    {loading ? (
                         <div className="flex justify-center items-center h-64">
                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
                         </div>
@@ -209,85 +157,33 @@ const AdminRequestsPage = () => {
                                 </div>
                             )}
 
-                            {activeTab === 'hospital' && (
-                                <div className="mb-12">
-                                    <h2 className="text-lg font-medium text-gray-900 mb-4">Pending Hospital Requests</h2>
-                                    {pendingHospitalRequests.length === 0 ? (
+                            {activeTab === 'history' && (
+                                <div>
+                                    <h2 className="text-lg font-medium text-gray-900 mb-4">User Request History</h2>
+                                    {historyRequests.length === 0 ? (
                                         <div className="bg-white p-8 rounded-lg shadow-sm text-center">
                                             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
-                                            <h3 className="mt-2 text-lg font-medium text-gray-900">No pending hospital requests</h3>
-                                            <p className="mt-1 text-sm text-gray-500">There are currently no new hospital requests.</p>
+                                            <h3 className="mt-2 text-lg font-medium text-gray-900">No user request history</h3>
+                                            <p className="mt-1 text-sm text-gray-500">There are no historical user requests to display.</p>
                                         </div>
                                     ) : (
                                         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
                                             <ul className="divide-y divide-gray-200">
-                                                {pendingHospitalRequests.map((request) => (
-                                                    <HospitalRequestItem
+                                                {historyRequests.map((request) => (
+                                                    <RequestItem
                                                         key={request._id}
                                                         request={request}
                                                         updatingId={updatingId}
                                                         handleStatusChange={handleStatusChange}
                                                         formatDate={formatDate}
+                                                        isHistory={true}
                                                     />
                                                 ))}
                                             </ul>
                                         </div>
                                     )}
-                                </div>
-                            )}
-
-                            {activeTab === 'history' && (
-                                <div>
-                                    <h2 className="text-lg font-medium text-gray-900 mb-4">Request History</h2>
-                                    <div className="mb-8">
-                                        <h3 className="text-md font-medium text-gray-700 mb-2">User Requests</h3>
-                                        {historyRequests.length === 0 ? (
-                                            <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-                                                <p className="text-sm text-gray-500">No user request history available.</p>
-                                            </div>
-                                        ) : (
-                                            <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
-                                                <ul className="divide-y divide-gray-200">
-                                                    {historyRequests.map((request) => (
-                                                        <RequestItem
-                                                            key={request._id}
-                                                            request={request}
-                                                            updatingId={updatingId}
-                                                            handleStatusChange={handleStatusChange}
-                                                            formatDate={formatDate}
-                                                            isHistory={true}
-                                                        />
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <h3 className="text-md font-medium text-gray-700 mb-2">Hospital Requests</h3>
-                                        {hospitalRequestHistory.length === 0 ? (
-                                            <div className="bg-white p-4 rounded-lg shadow-sm">
-                                                <p className="text-sm text-gray-500">No hospital request history available.</p>
-                                            </div>
-                                        ) : (
-                                            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-                                                <ul className="divide-y divide-gray-200">
-                                                    {hospitalRequestHistory.map((request) => (
-                                                        <HospitalRequestItem
-                                                            key={request._id}
-                                                            request={request}
-                                                            updatingId={updatingId}
-                                                            handleStatusChange={handleStatusChange}
-                                                            formatDate={formatDate}
-                                                            isHistory={true}
-                                                        />
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                    </div>
                                 </div>
                             )}
                         </>
@@ -306,11 +202,11 @@ const RequestItem = ({ request, updatingId, handleStatusChange, formatDate, isHi
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2 mb-2">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${request.type === 'blood'
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${request.type === 'Blood'
                         ? 'bg-red-100 text-red-800'
                         : 'bg-green-100 text-green-800'
                         }`}>
-                        {request.type === 'blood' ? 'Blood' : 'Organ'}
+                        {request.type === 'Blood' ? 'Blood' : 'Organ'}
                     </span>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${request.status === 'Approved'
                         ? 'bg-green-100 text-green-800'
@@ -327,7 +223,7 @@ const RequestItem = ({ request, updatingId, handleStatusChange, formatDate, isHi
                     )}
                 </div>
                 <h2 className="text-lg font-medium text-gray-900">
-                    {request.type === 'blood'
+                    {request.type === 'Blood'
                         ? `${request.bloodType} Blood Request`
                         : `${request.organType} Organ Request`}
                 </h2>
@@ -360,88 +256,6 @@ const RequestItem = ({ request, updatingId, handleStatusChange, formatDate, isHi
                     </button>
                     <button
                         onClick={() => handleStatusChange(request._id, 'unavailable')}
-                        disabled={updatingId === request._id}
-                        className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white ${updatingId === request._id
-                            ? 'bg-gray-400'
-                            : 'bg-gray-600 hover:bg-gray-700'
-                            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500`}
-                    >
-                        {updatingId === request._id ? 'Updating...' : 'Reject'}
-                    </button>
-                </div>
-            )}
-        </div>
-    </li>
-);
-
-// Hospital Request Item Component
-const HospitalRequestItem = ({ request, updatingId, handleStatusChange, formatDate, isHistory = false }) => (
-    <li className={`p-4 hover:bg-gray-50 ${request.status === 'Approved' ? 'bg-green-50' :
-        request.status === 'Pending' ? 'bg-yellow-50' : 'bg-gray-50'
-        }`}>
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2 mb-2">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${request.type === 'blood'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-green-100 text-green-800'
-                        }`}>
-                        {request.type === 'blood' ? 'Blood' : 'Organ'}
-                    </span>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${request.status === 'Approved'
-                        ? 'bg-green-100 text-green-800'
-                        : request.status === 'Pending'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                        {request.status}
-                    </span>
-                    {!isHistory && request.status === 'Pending' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            New
-                        </span>
-                    )}
-                </div>
-                <h2 className="text-lg font-medium text-gray-900">
-                    {request.type === 'blood'
-                        ? `${request.bloodType} Blood Request`
-                        : `${request.organType} Organ Request`}
-                </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                    Hospital: {request.hospitalName}
-                </p>
-                <p className="mt-1 text-sm text-gray-500">
-                    Contact: {request.contactPerson} ({request.contactEmail})
-                </p>
-                <p className="mt-1 text-sm text-gray-500">
-                    Phone: {request.contactPhone}
-                </p>
-                <p className="mt-1 text-sm text-gray-500">
-                    Needed by: {formatDate(request.neededBy)}
-                </p>
-                {request.notes && (
-                    <p className="mt-1 text-sm text-gray-600">
-                        Notes: {request.notes}
-                    </p>
-                )}
-                <p className="mt-1 text-sm text-gray-500">
-                    Submitted on: {formatDate(request.createdAt)}
-                </p>
-            </div>
-            {!isHistory && (
-                <div className="mt-4 md:mt-0 md:ml-4 flex space-x-2">
-                    <button
-                        onClick={() => handleStatusChange(request._id, 'Approved', true)}
-                        disabled={updatingId === request._id}
-                        className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white ${updatingId === request._id
-                            ? 'bg-green-400'
-                            : 'bg-green-600 hover:bg-green-700'
-                            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
-                    >
-                        {updatingId === request._id ? 'Approving...' : 'Approve'}
-                    </button>
-                    <button
-                        onClick={() => handleStatusChange(request._id, 'Rejected', true)}
                         disabled={updatingId === request._id}
                         className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white ${updatingId === request._id
                             ? 'bg-gray-400'
