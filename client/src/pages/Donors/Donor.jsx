@@ -118,7 +118,7 @@ const DonorPage = ({ setActiveTab }) => {
                                 </li>
                                 <li className="flex items-start">
                                     <span className="text-red-500 mr-2">•</span>
-                                    <span>Over 100,000 people in the U.S. are waiting for an organ transplant</span>
+                                    <span>Over 100,000 people in  India are waiting for an organ transplant</span>
                                 </li>
                                 <li className="flex items-start">
                                     <span className="text-red-500 mr-2">•</span>
@@ -199,7 +199,7 @@ const DonorPage = ({ setActiveTab }) => {
                                 <p className="italic text-gray-600">
                                     "The new laparoscopic kidney transplant procedure allowed me to return to work in half the expected time."
                                 </p>
-                                <p className="font-semibold mt-2">- Michael T., Kidney Recipient</p>
+                                <p className="font-semibold mt-2">-  Kidney Recipient</p>
                             </div>
                         </div>
 
@@ -223,8 +223,9 @@ const DonorPage = ({ setActiveTab }) => {
                     </div>
                 </section>
 
-                <Footer />
+
             </div>
+            <Footer />
         </>
     );
 };

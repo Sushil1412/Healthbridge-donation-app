@@ -18,12 +18,12 @@ const UserRequestSchema = new mongoose.Schema({
     },
     bloodType: {
         type: String,
-        enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+        enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', null],
         required: function () { return this.type === 'Blood'; }
     },
-    organ: {
+    organType: {  // Changed from 'organ' to 'organType' for consistency
         type: String,
-        enum: ['Kidney', 'Liver', 'Heart', 'Lung', 'Pancreas'],
+        enum: ['Kidney', 'Liver', 'Heart', 'Lung', 'Pancreas', null],
         required: function () { return this.type === 'Organ'; }
     },
     additionalInfo: {
@@ -32,17 +32,55 @@ const UserRequestSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Pending', 'Approved', 'unavailable', 'Rejected'],
+        enum: ['Pending', 'Approved', 'Unavailable', 'Rejected'],
         default: 'Pending'
     },
     neededBy: {
         type: Date,
         required: true
     },
-    date: {
+    approvalDetails: {
+        approvedDate: {
+            type: Date,
+            required: function () { return this.status === 'Approved'; }
+        },
+        approvedTime: {
+            type: String,
+            required: function () { return this.status === 'Approved'; }
+        },
+        message: {
+            type: String,
+            trim: true
+        },
+        hospital: {
+            name: {
+                type: String,
+                required: function () { return this.status === 'Approved'; }
+            },
+            address: {
+                type: String,
+                required: function () { return this.status === 'Approved'; }
+            },
+            contact: {
+                type: String,
+                required: function () { return this.status === 'Approved'; }
+            }
+        }
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
         type: Date,
         default: Date.now
     }
 }, { timestamps: true });
+
+// Add a pre-save hook to update the updatedAt field
+UserRequestSchema.pre('save', function (next) {
+    this.updatedAt = Date.now();
+    next();
+});
 
 module.exports = mongoose.model('UserRequest', UserRequestSchema);

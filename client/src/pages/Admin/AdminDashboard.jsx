@@ -5,54 +5,11 @@ import AdminHeader from '../../components/Header/AdminHeader';
 const AdminDashboard = () => {
     const navigate = useNavigate();
 
-    // Recent activity data
-    const recentActivities = [
-        {
-            id: 1,
-            type: 'Donor Registration',
-            name: 'John Doe',
-            date: '2023-06-15 14:30',
-            status: 'Approved',
-            icon: '👤'
-        },
-        {
-            id: 2,
-            type: 'Appointment Scheduled',
-            name: 'City General Hospital',
-            date: '2023-06-14 10:15',
-            status: 'Completed',
-            icon: '🏥'
-        },
-        {
-            id: 3,
-            type: 'Blood Donation',
-            name: 'Jane Smith (A+)',
-            date: '2023-06-13 09:45',
-            status: 'Recorded',
-            icon: '💉'
-        },
-        {
-            id: 4,
-            type: 'User Request',
-            name: 'Michael Johnson',
-            date: '2023-06-12 16:20',
-            status: 'Approved',
-            icon: '✅'
-        },
-        {
-            id: 5,
-            type: 'Organ Donation Pledge',
-            name: 'Sarah Williams (Kidney)',
-            date: '2023-06-11 11:30',
-            status: 'Registered',
-            icon: '❤️'
-        }
-    ];
+
 
     const cards = [
         {
             title: 'Hospital Inventory',
-            count: 42,
             description: 'Manage blood stock levels',
             path: '/Admin/inventory',
             icon: (
@@ -107,9 +64,9 @@ const AdminDashboard = () => {
                                     <h2 className="text-lg font-semibold text-gray-800 group-hover:text-red-700">
                                         {card.title}
                                     </h2>
-                                    <p className="text-2xl font-bold text-red-700 my-1">
+                                    {/* <p className="text-2xl font-bold text-red-700 my-1">
                                         {card.count}
-                                    </p>
+                                    </p> */}
                                     <p className="text-sm text-gray-600 mt-auto">
                                         {card.description}
                                     </p>
@@ -121,37 +78,7 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Recent Activity Section */}
-                <div className="mt-10 ml-20 mr-20">
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Activities</h2>
-                        <div className="space-y-4">
-                            {recentActivities.map((activity) => (
-                                <div key={activity.id} className="flex items-start border-b pb-4 last:border-b-0">
-                                    <div className="text-2xl mr-4">{activity.icon}</div>
-                                    <div className="flex-1">
-                                        <div className="flex justify-between">
-                                            <h3 className="font-medium text-gray-800">{activity.type}</h3>
-                                            <span className={`text-sm px-2 py-1 rounded ${activity.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                                activity.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
-                                                    'bg-gray-100 text-gray-800'
-                                                }`}>
-                                                {activity.status}
-                                            </span>
-                                        </div>
-                                        <p className="text-gray-600">{activity.name}</p>
-                                        <p className="text-sm text-gray-500">{activity.date}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <button
-                            onClick={() => navigate('/admin/activities')}
-                            className="mt-4 text-red-600 hover:text-red-700 font-medium"
-                        >
-                            View All Activities →
-                        </button>
-                    </div>
-                </div>
+
             </div>
         </>
     );

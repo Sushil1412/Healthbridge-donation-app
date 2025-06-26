@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DonorHeader from '../../components/Header/DonorHeader';
+import Footer from '../../components/Footer/Footer'
 
 
 
@@ -12,7 +13,7 @@ const MyPledge = () => {
     useEffect(() => {
         const fetchPledges = async () => {
             try {
-            
+
                 const email = localStorage.getItem('email');
                 const response = await axios.get('http://localhost:8000/api/auth/mypledge',
                     {
@@ -180,6 +181,7 @@ const MyPledge = () => {
                     ))}
                 </div>
             </div>
+            <Footer />
         </>
     );
 };

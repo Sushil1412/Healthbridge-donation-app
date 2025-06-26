@@ -1,19 +1,29 @@
-import { useState } from 'react';
-import AdminHeader from '../../components/Header/AdminHeader'
+import { useState, useEffect } from 'react';
+import AdminHeader from '../../components/Header/AdminHeader';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const Inventory = () => {
-    // Blood inventory summary data
-    const [bloodSummary] = useState({
-        criticalTypes: 2,
-        totalUnits: 72
-    });
+    const [bloodSummary, setBloodSummary] = useState({ criticalTypes: 0, totalUnits: 0 });
+    const [organSummary, setOrganSummary] = useState({ available: 0, waitlist: 0 });
 
-    // Organ inventory summary data
-    const [organSummary] = useState({
-        available: 5,
-        waitlist: 32
-    });
+    useEffect(() => {
+        const fetchSummaries = async () => {
+            try {
+                const [bloodRes, organRes] = await Promise.all([
+                    axios.get('http://localhost:8000/api/auth/bloodsummary'),
+                    axios.get('http://localhost:8000/api/auth/organsummary')
+                ]);
+
+                setBloodSummary(bloodRes.data);
+                setOrganSummary(organRes.data);
+            } catch (error) {
+                console.error("Error fetching inventory data:", error);
+            }
+        };
+
+        fetchSummaries();
+    }, []);
 
     return (
         <>
@@ -60,12 +70,12 @@ const Inventory = () => {
                                     </span>
                                     <span className="text-sm text-gray-600 ml-1">available</span>
                                 </div>
-                                <div className="text-right">
+                                {/* <div className="text-right">
                                     <span className="text-3xl font-bold text-gray-700">
                                         {organSummary.waitlist}
                                     </span>
                                     <span className="text-sm text-gray-600 ml-1">waiting</span>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                     </Link>

@@ -9,12 +9,20 @@ const { adminrequest, adminupdate, adminapplication, adminapplicationupdate, adm
 const { pledges, mypledge, bloodRequestDonor, bloodrequestfordonor, upadateBloodrequestdonor, hospitalmypledge, bloodrequestforadmin,
     updatedonorstatus, mypledgetype } = require('../controllers/Donor/request');
 
+const { requestapprove, updateuserprofile, getuser } = require('../controllers/request/requestapprove');
+const { bloodsummary, organsummary } = require('../controllers/inventory/inventoryrequest');
+
+const { validateSignup } = require('./validation');
+
 const router = express.Router();
 
-router.post('/signup', signup);
+router.post('/signup', validateSignup, signup);
 router.post('/login', login);
 router.post('/userrequest', userrequest);
 router.get('/userrequest/:id', getUserRequests);
+router.put('/updateuserprofile', updateuserprofile);
+router.get('/getuser', getuser);
+router.put('/updateuserprofile', updateuserprofile);
 
 //admin request
 router.patch('/adminrequests/:type/:id/status', adminupdate);
@@ -24,6 +32,9 @@ router.get('/adminapplication', adminapplication);
 router.get('/adminhistory', adminhistory);
 router.patch('/adminapplicationupdate', adminapplicationupdate);
 router.get('/bloodrequestforadmin', bloodrequestforadmin);
+router.patch('/requestapprove/:id', requestapprove);
+router.get('/bloodsummary', bloodsummary);
+router.get('/organsummary', organsummary);
 
 //hospital request
 
@@ -37,6 +48,7 @@ router.get('/hospitalorganrequests', hospitalorganrequests);
 router.patch('/hospitalrequestsubmit', hospitalrequestsubmit);
 router.get('/hospitalmypledge', hospitalmypledge);
 router.patch('/updatedonorstatus/:donorId', updatedonorstatus);
+
 
 // Donor request
 

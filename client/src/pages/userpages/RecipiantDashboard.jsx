@@ -130,16 +130,45 @@ const RecipientDashboard = () => {
                         <div className="bg-white p-6 rounded-lg shadow">
                             <h3 className="text-lg font-semibold mb-2 text-red-600">Our Network</h3>
                             <ul className="text-gray-600 space-y-2">
-                                <li>• 200+ partner hospitals</li>
+                                {/* <li>• 200+ partner hospitals</li> */}
                                 <li>• 24/7 emergency support</li>
                                 <li>• Certified transplant centers</li>
                             </ul>
                         </div>
                     </div>
 
-                    {/* Profile Section */}
-                    <div className="mt-6">
-
+                    <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+                        <h3 className="text-xl font-bold text-gray-800 mb-6">How Our System Works</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            {[
+                                {
+                                    icon: '📝',
+                                    title: 'Create Request',
+                                    desc: 'Fill out our simple form with your needs'
+                                },
+                                {
+                                    icon: '🔍',
+                                    title: 'Matching',
+                                    desc: 'Our system finds compatible donors'
+                                },
+                                {
+                                    icon: '🏥',
+                                    title: 'Coordination',
+                                    desc: 'We coordinate with hospital and donors'
+                                },
+                                {
+                                    icon: '❤️',
+                                    title: 'Transplant',
+                                    desc: 'Life-saving procedure is performed'
+                                }
+                            ].map((step, index) => (
+                                <div key={index} className="text-center p-4 border rounded-lg hover:bg-gray-50">
+                                    <div className="text-3xl mb-2">{step.icon}</div>
+                                    <h4 className="font-semibold mb-1">{step.title}</h4>
+                                    <p className="text-sm text-gray-600">{step.desc}</p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </main>
             </div>
@@ -287,7 +316,7 @@ const NewRequestForm = ({ onSubmit, onCancel }) => {
                 </button>
             </div>
         </form>
-        
+
     );
 };
 

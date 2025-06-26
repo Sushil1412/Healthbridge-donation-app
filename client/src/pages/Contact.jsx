@@ -123,7 +123,7 @@ const Contact = () => {
                                     </div>
                                     <div className="ml-3">
                                         <h3 className="text-sm font-medium text-gray-900">Headquarters</h3>
-                                        <p className="text-sm text-gray-500">123 Medical Plaza, Suite 400<br />Bangalore, Karnataka 560001</p>
+                                        <p className="text-sm text-gray-500"> City hospital, <br />Bhubaneswar, Odisha 750017</p>
                                     </div>
                                 </div>
 
@@ -135,7 +135,7 @@ const Contact = () => {
                                     </div>
                                     <div className="ml-3">
                                         <h3 className="text-sm font-medium text-gray-900">Support</h3>
-                                        <p className="text-sm text-gray-500">+91 80 1234 5678<br />support@lifeshare.in</p>
+                                        <p className="text-sm text-gray-500">+91 7777 555 89<br />support@lifeshare.in</p>
                                     </div>
                                 </div>
 
@@ -155,14 +155,16 @@ const Contact = () => {
 
                         <div className="bg-white shadow rounded-lg overflow-hidden">
                             <iframe
-                                title="LifeShare Location"
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3888.003073604283!2d77.59451431482193!3d12.9719979908568!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae1670c9b44e6d%3A0xf5df53c1045042c6!2sBangalore%20Medical%20College!5e0!3m2!1sen!2sin!4v1620000000000!5m2!1sen!2sin"
+                                title="city Hospital Bhubaneswar Location"
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3768.497238496469!2d85.81950111490364!3d20.296757086393374!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a1909bb4dcd7f03%3A0x1d301dcb2333ed8a!2sApollo%20Hospitals%20Bhubaneswar!5e0!3m2!1sen!2sin!4v1718184000000"
                                 width="100%"
                                 height="300"
                                 style={{ border: 0 }}
                                 allowFullScreen=""
                                 loading="lazy"
-                            ></iframe>
+                                referrerPolicy="no-referrer-when-downgrade"
+                            />
+
                         </div>
                     </div>
                 </div>

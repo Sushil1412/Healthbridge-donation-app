@@ -70,7 +70,7 @@ exports.adminapplication = async (req, res) => {
     try {
         const requests = await UserRequest.find({});
         res.json(requests);
-        console.log(requests);
+        // console.log(requests);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -81,7 +81,7 @@ exports.adminapplicationupdate = async (req, res) => {
 
         // Validate status
         console.log(status);
-        const validStatuses = ['Pending', 'Approved', 'unavailable', 'Rejected'];
+        const validStatuses = ['Pending', 'Approved', 'Unavailable', 'Rejected'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
                 success: false,

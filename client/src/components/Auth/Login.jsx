@@ -78,7 +78,11 @@ const Login = () => {
                 role: data.role,
                 _id: data._id,
                 email: data.email,
-                name: data.name
+                name: data.name,
+                aadhar: data.aadhar,
+                bloodGroup: data.bloodGroup,
+                address: data.address,
+                mobile: data.mobile
             });
 
             // Redirect based on role

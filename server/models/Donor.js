@@ -26,6 +26,16 @@ const DonorSchema = new mongoose.Schema({
         required: [true, 'Blood group is required'],
         enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
     },
+    mobile: {
+        type: String,
+        required: [true, 'Please provide your mobile number'],
+        default: 'not available'
+    },
+    address: {
+        type: String,
+        required: [true, 'Please provide your address'],
+        default: 'not available'
+    },
     aadhar: {
         type: String,
         required: [true, 'Aadhar number is required'],
@@ -34,7 +44,7 @@ const DonorSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['active', 'inactive', 'pending'], // Customize statuses as needed
+        enum: ['approved', 'inactive', 'pending'], // Customize statuses as needed
         default: 'pending',
     },
     createdAt: {

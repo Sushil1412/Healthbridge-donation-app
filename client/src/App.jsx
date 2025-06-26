@@ -50,12 +50,13 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="userprofile" element={<UserProfile />} />
 
         {/* User Protected Routes */}
         <Route path="/Recipiant-dashboard" element={<UserRoute />}>
           <Route index element={<RecipientDashboard />} />
           <Route path="appointment" element={<UserAppointment />} />
-          <Route path="userprofile" element={<UserProfile />} />
+
           <Route path="myrequests" element={<MyRequests />} />
 
         </Route>

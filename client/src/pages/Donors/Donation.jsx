@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import AdminHeader from '../../components/Header/AdminHeader';
 import DonorHeader from '../../components/Header/DonorHeader';
+import Footer from '../../components/Footer/Footer';
 
 const AdminHospitalRequests = () => {
     const [requests, setRequests] = useState([]);
@@ -175,6 +176,7 @@ const AdminHospitalRequests = () => {
                     )}
                 </div>
             </div>
+            <Footer />
         </>
     );
 };
@@ -246,6 +248,7 @@ const RequestCard = ({ request, updatingId, onApprove, onReject, isHistory = fal
                 )}
             </div>
         </div>
+
     );
 };
 

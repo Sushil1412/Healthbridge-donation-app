@@ -21,6 +21,16 @@ const RecipientSchema = new mongoose.Schema({
         type: String,
         default: 'recipient',
     },
+    mobile: {
+        type: String,
+        required: [true, 'Please provide your mobile number'],
+        default: 'not available'
+    },
+    address: {
+        type: String,
+        required: [true, 'Please provide your address'],
+        default: 'not available'
+    },
     bloodGroup: {
         type: String,
         required: [true, 'Blood group is required'],

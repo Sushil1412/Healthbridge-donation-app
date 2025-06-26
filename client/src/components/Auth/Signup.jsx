@@ -12,61 +12,55 @@ const Signup = () => {
         bloodGroup: '',
         aadhar: ''
     });
-    const [error, setError] = useState('');
-    const [message, setMessage] = useState('');
+    const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        // Clear error when user types
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: '' }));
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
-
-        if (formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match');
-            return;
-        }
-
-        if (!formData.role) {
-            setError('Please select a role');
-            return;
-        }
-
         setIsLoading(true);
+        setErrors({});
 
         try {
             const payload = {
                 name: formData.name,
                 email: formData.email,
                 password: formData.password,
+                confirmPassword: formData.confirmPassword,
                 role: formData.role,
                 bloodGroup: formData.bloodGroup,
                 aadhar: formData.aadhar
             };
 
-            if (!formData.bloodGroup) {
-                setError('Please select your blood group');
-                setIsLoading(false);
-                return;
-            }
-            if (!formData.aadhar) {
-                setError('Aadhar number is required');
-                setIsLoading(false);
-                return;
-            }
-
             const res = await axios.post('http://localhost:8000/api/auth/signup', payload);
-            setMessage(res.data.message);
-            navigate('/');
+            navigate('/', { state: { successMessage: 'Registration successful! Please login.' } });
         } catch (err) {
-            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+            if (err.response && err.response.data && err.response.data.errors) {
+                // Validation errors from backend
+                setErrors(err.response.data.errors);
+            } else {
+                // Other errors
+                setErrors({ general: err.response?.data?.message || 'Registration failed. Please try again.' });
+            }
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // Helper function to display error messages
+    const renderError = (field) => {
+        return errors[field] && (
+            <p className="mt-1 text-sm text-red-600">{errors[field]}</p>
+        );
     };
 
     return (
@@ -97,7 +91,7 @@ const Signup = () => {
                         </p>
                     </div>
 
-                    {error && (
+                    {errors.general && (
                         <div className="rounded-md bg-red-50 p-4">
                             <div className="flex">
                                 <div className="flex-shrink-0">
@@ -106,7 +100,7 @@ const Signup = () => {
                                     </svg>
                                 </div>
                                 <div className="ml-3">
-                                    <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                                    <h3 className="text-sm font-medium text-red-800">{errors.general}</h3>
                                 </div>
                             </div>
                         </div>
@@ -123,9 +117,11 @@ const Signup = () => {
                                             name="role"
                                             type="radio"
                                             checked={formData.role === role}
-                                            onChange={() => setFormData({ ...formData, role })}
+                                            onChange={() => {
+                                                setFormData({ ...formData, role });
+                                                if (errors.role) setErrors(prev => ({ ...prev, role: '' }));
+                                            }}
                                             className="sr-only"
-                                            required
                                         />
                                         <label
                                             htmlFor={`role-${role}`}
@@ -138,6 +134,7 @@ const Signup = () => {
                                     </div>
                                 ))}
                             </div>
+                            {renderError('role')}
 
                             {/* Name */}
                             <div>
@@ -150,9 +147,10 @@ const Signup = () => {
                                     required
                                     value={formData.name}
                                     onChange={handleChange}
-                                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
+                                    className={`appearance-none relative block w-full px-3 py-2 border ${errors.name ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm`}
                                     placeholder="Full Name"
                                 />
+                                {renderError('name')}
                             </div>
 
                             {/* Email */}
@@ -166,9 +164,10 @@ const Signup = () => {
                                     required
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
+                                    className={`appearance-none relative block w-full px-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm`}
                                     placeholder="Email address"
                                 />
+                                {renderError('email')}
                             </div>
 
                             {/* Blood Group */}
@@ -180,7 +179,7 @@ const Signup = () => {
                                     value={formData.bloodGroup}
                                     onChange={handleChange}
                                     required
-                                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
+                                    className={`appearance-none relative block w-full px-3 py-2 border ${errors.bloodGroup ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm`}
                                 >
                                     <option value="">Select Blood Group</option>
                                     <option value="A+">A+</option>
@@ -192,6 +191,7 @@ const Signup = () => {
                                     <option value="O+">O+</option>
                                     <option value="O-">O-</option>
                                 </select>
+                                {renderError('bloodGroup')}
                             </div>
 
                             {/* Aadhar */}
@@ -204,9 +204,11 @@ const Signup = () => {
                                     value={formData.aadhar}
                                     onChange={handleChange}
                                     required
-                                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
-                                    placeholder="Aadhar Number"
+                                    className={`appearance-none relative block w-full px-3 py-2 border ${errors.aadhar ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm`}
+                                    placeholder="Aadhar Number (12 digits)"
+                                    maxLength="12"
                                 />
+                                {renderError('aadhar')}
                             </div>
 
                             {/* Password */}
@@ -220,10 +222,10 @@ const Signup = () => {
                                     required
                                     value={formData.password}
                                     onChange={handleChange}
-                                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
-                                    placeholder="Password (min 8 characters)"
-                                    minLength="8"
+                                    className={`appearance-none relative block w-full px-3 py-2 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm`}
+                                    placeholder="Password (min 8 characters with uppercase, lowercase, number & special character)"
                                 />
+                                {renderError('password')}
                             </div>
 
                             {/* Confirm Password */}
@@ -237,10 +239,10 @@ const Signup = () => {
                                     required
                                     value={formData.confirmPassword}
                                     onChange={handleChange}
-                                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
+                                    className={`appearance-none relative block w-full px-3 py-2 border ${errors.confirmPassword ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm`}
                                     placeholder="Confirm Password"
-                                    minLength="8"
                                 />
+                                {renderError('confirmPassword')}
                             </div>
                         </div>
 

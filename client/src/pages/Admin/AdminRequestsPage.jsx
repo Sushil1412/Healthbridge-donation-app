@@ -7,7 +7,21 @@ const AdminRequestsPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [updatingId, setUpdatingId] = useState(null);
-    const [activeTab, setActiveTab] = useState('new'); // 'new' or 'history'
+    const [activeTab, setActiveTab] = useState('new');
+    const [showApprovalForm, setShowApprovalForm] = useState(false);
+    const [currentRequestId, setCurrentRequestId] = useState(null);
+    const [formData, setFormData] = useState({
+        date: '',
+        time: '',
+        message: ''
+    });
+
+    // Static hospital address data
+    const hospitalAddress = {
+        name: "City General Hospital",
+        address: "123 Medical Center Drive, Healthville, HV 12345",
+        contact: "+1 (555) 123-4567"
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -29,7 +43,88 @@ const AdminRequestsPage = () => {
         fetchData();
     }, []);
 
+    const handleApprovalClick = (requestId) => {
+        setCurrentRequestId(requestId);
+        setShowApprovalForm(true);
+    };
+
+    const handleFormChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.date || !formData.time) {
+            setError('Please select both date and time');
+            return;
+        }
+
+        try {
+            setUpdatingId(currentRequestId);
+
+            // Prepare data to send to server
+            const approvalData = {
+                date: formData.date,
+                time: formData.time,
+                message: formData.message
+            };
+
+            // Optimistic update
+            setRequests(prevRequests =>
+                prevRequests.map(request =>
+                    request._id === currentRequestId
+                        ? {
+                            ...request,
+                            status: 'Approved',
+                            approvalDetails: {
+                                ...approvalData,
+                                hospital: hospitalAddress
+                            }
+                        }
+                        : request
+                ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            );
+
+            // Send to server - Note the URL change to include ID
+            await axios.patch(
+                `http://localhost:8000/api/auth/requestapprove/${currentRequestId}`,
+                approvalData
+            );
+
+            // Reset form and close
+            setFormData({
+                date: '',
+                time: '',
+                message: ''
+            });
+            setShowApprovalForm(false);
+            setCurrentRequestId(null);
+
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to approve request');
+            console.error('Approval error:', err);
+
+            // Revert on error by refetching
+            const userResponse = await axios.get('http://localhost:8000/api/auth/adminapplication');
+            const sortedUserRequests = userResponse.data.sort((a, b) =>
+                new Date(b.createdAt) - new Date(a.createdAt)
+            );
+            setRequests(sortedUserRequests);
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
     const handleStatusChange = async (requestId, newStatus) => {
+        if (newStatus === 'Approved') {
+            handleApprovalClick(requestId);
+            return;
+        }
+
         try {
             setUpdatingId(requestId);
 
@@ -93,6 +188,86 @@ const AdminRequestsPage = () => {
                         </div>
                     )}
 
+                    {/* Approval Form Modal */}
+                    {showApprovalForm && (
+                        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                                <h2 className="text-xl font-bold mb-4">Approve Request</h2>
+                                <form onSubmit={handleFormSubmit}>
+                                    <div className="mb-4">
+                                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="date">
+                                            Available Date
+                                        </label>
+                                        <input
+                                            type="date"
+                                            id="date"
+                                            name="date"
+                                            value={formData.date}
+                                            onChange={handleFormChange}
+                                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                            min={new Date().toISOString().split('T')[0]}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="time">
+                                            Available Time
+                                        </label>
+                                        <input
+                                            type="time"
+                                            id="time"
+                                            name="time"
+                                            value={formData.time}
+                                            onChange={handleFormChange}
+                                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="message">
+                                            Additional Message (Optional)
+                                        </label>
+                                        <textarea
+                                            id="message"
+                                            name="message"
+                                            value={formData.message}
+                                            onChange={handleFormChange}
+                                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                            rows="3"
+                                            placeholder="Any additional instructions for the user..."
+                                        />
+                                    </div>
+                                    <div className="mb-4 p-3 bg-gray-100 rounded">
+                                        <h3 className="font-bold text-sm mb-1">Hospital Information:</h3>
+                                        <p className="text-sm">{hospitalAddress.name}</p>
+                                        <p className="text-sm">{hospitalAddress.address}</p>
+                                        <p className="text-sm">Contact: {hospitalAddress.contact}</p>
+                                    </div>
+                                    <div className="flex justify-end space-x-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowApprovalForm(false);
+                                                setCurrentRequestId(null);
+                                            }}
+                                            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={updatingId === currentRequestId}
+                                            className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${updatingId === currentRequestId ? 'bg-green-400' : 'bg-green-600 hover:bg-green-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
+                                        >
+                                            {updatingId === currentRequestId ? 'Sending...' : 'Confirm Approval'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Rest of your existing code... */}
                     {/* Tab Navigation */}
                     <div className="border-b border-gray-200 mb-6">
                         <nav className="-mb-px flex space-x-8">
@@ -194,7 +369,6 @@ const AdminRequestsPage = () => {
     );
 };
 
-// User Request Item Component
 const RequestItem = ({ request, updatingId, handleStatusChange, formatDate, isHistory = false }) => (
     <li className={`p-4 hover:bg-gray-50 ${request.status === 'Approved' ? 'bg-green-50' :
         request.status === 'Pending' ? 'bg-yellow-50' : 'bg-gray-50'
@@ -238,6 +412,20 @@ const RequestItem = ({ request, updatingId, handleStatusChange, formatDate, isHi
                         Notes: {request.notes}
                     </p>
                 )}
+                {request.status === 'Approved' && request.approvalDetails && (
+                    <div className="mt-2 p-2 bg-green-100 rounded">
+                        <p className="text-sm font-medium text-green-800">Approval Details:</p>
+                        {/* <p className="text-sm text-green-700">
+                            Available on: {formatDate(request.approvalDetails.date)} at {request.approvalDetails.time}
+                        </p> */}
+                        {request.approvalDetails.message && (
+                            <p className="text-sm text-green-700">Message: {request.approvalDetails.message}</p>
+                        )}
+                        <p className="text-sm text-green-700">
+                            Hospital: {request.approvalDetails.hospital.name}, {request.approvalDetails.hospital.address}
+                        </p>
+                    </div>
+                )}
                 <p className="mt-1 text-sm text-gray-500">
                     Submitted on: {formatDate(request.createdAt)}
                 </p>
@@ -255,14 +443,14 @@ const RequestItem = ({ request, updatingId, handleStatusChange, formatDate, isHi
                         {updatingId === request._id ? 'Approving...' : 'Approve'}
                     </button>
                     <button
-                        onClick={() => handleStatusChange(request._id, 'unavailable')}
+                        onClick={() => handleStatusChange(request._id, 'Unavailable')}
                         disabled={updatingId === request._id}
                         className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white ${updatingId === request._id
                             ? 'bg-gray-400'
                             : 'bg-gray-600 hover:bg-gray-700'
                             } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500`}
                     >
-                        {updatingId === request._id ? 'Updating...' : 'Reject'}
+                        {updatingId === request._id ? 'Updating...' : 'Unavailable'}
                     </button>
                 </div>
             )}

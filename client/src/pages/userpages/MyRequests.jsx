@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import UserHeader from '../../components/Header/UserHeader';
 import axios from 'axios';
 import Footer from '../../components/Footer/Footer';
@@ -7,6 +6,8 @@ import Footer from '../../components/Footer/Footer';
 const MyRequests = () => {
     const [requests, setRequests] = useState([]);
     const [activeTab, setActiveTab] = useState('pending');
+    const [selectedRequest, setSelectedRequest] = useState(null);
+    const [showModal, setShowModal] = useState(false);
 
     const id = localStorage.getItem('email');
 
@@ -17,20 +18,37 @@ const MyRequests = () => {
     const fetchRequestsFromBackend = async () => {
         try {
             const response = await axios.get(`http://localhost:8000/api/auth/userrequest/${id}`);
-            setRequests(response.data);
+            const sortedRequests = response.data.sort((a, b) =>
+                new Date(b.createdAt) - new Date(a.createdAt));
+            setRequests(sortedRequests);
         } catch (error) {
             console.error('Error fetching requests:', error);
         }
     };
 
-    // const handleCancelRequest = async (id) => {
-    //     try {
-    //         await axios.delete(`http://localhost:8000/api/auth/userrequest/${id}`);
-    //         setRequests(prev => prev.filter(req => req._id !== id));
-    //     } catch (error) {
-    //         console.error('Error canceling request:', error);
-    //     }
-    // };
+    const handleViewDetails = (request) => {
+        setSelectedRequest(request);
+        setShowModal(true);
+    };
+
+    const closeModal = () => {
+        setShowModal(false);
+        setSelectedRequest(null);
+    };
+
+    const getStatusBadgeColor = (status) => {
+        switch (status) {
+            case 'Approved':
+                return 'bg-green-100 text-green-800';
+            case 'Pending':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'Rejected':
+            case 'Unavailable':
+                return 'bg-red-100 text-red-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
 
     return (
         <>
@@ -39,13 +57,6 @@ const MyRequests = () => {
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="mb-6">
                         <h1 className="text-3xl font-bold text-gray-900">My Requests</h1>
-                        <div className="mt-2 flex items-center">
-                            <Link to="/dashboard" className="text-blue-600 hover:text-blue-800">
-                                Dashboard
-                            </Link>
-                            <span className="mx-2 text-gray-500">/</span>
-                            <span className="text-gray-600">My Requests</span>
-                        </div>
                     </div>
 
                     <div className="border-b border-gray-200 mb-6">
@@ -60,7 +71,7 @@ const MyRequests = () => {
                                 onClick={() => setActiveTab('completed')}
                                 className={`${activeTab === 'completed' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
                             >
-                                Completed Requests
+                                Request History
                             </button>
                         </nav>
                     </div>
@@ -70,7 +81,7 @@ const MyRequests = () => {
                             <h3 className="text-lg font-medium text-gray-900 px-4 py-5 sm:px-6">
                                 Pending Requests
                             </h3>
-                            {requests.filter(req => req.status !== 'Approved').length === 0 ? (
+                            {requests.filter(req => req.status === 'Pending').length === 0 ? (
                                 <div className="px-4 py-5 sm:p-6 text-center text-gray-500">
                                     No pending requests found.
                                 </div>
@@ -91,9 +102,6 @@ const MyRequests = () => {
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Status
                                                 </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Actions
-                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
@@ -111,21 +119,10 @@ const MyRequests = () => {
                                                             {request.neededBy || 'N/A'}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
-                                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${request.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                                                request.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                                    'bg-red-100 text-red-800'
-                                                                }`}>
+                                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeColor(request.status)}`}>
                                                                 {request.status}
                                                             </span>
                                                         </td>
-                                                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            <button
-                                                                onClick={() => handleCancelRequest(request._id)}
-                                                                className="text-red-600 hover:text-red-900"
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                        </td> */}
                                                     </tr>
                                                 ))}
                                         </tbody>
@@ -136,11 +133,11 @@ const MyRequests = () => {
                     ) : (
                         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
                             <h3 className="text-lg font-medium text-gray-900 px-4 py-5 sm:px-6">
-                                Completed Requests
+                                Request History
                             </h3>
-                            {requests.filter(req => req.status === 'Approved').length === 0 ? (
+                            {requests.filter(req => req.status !== 'Pending').length === 0 ? (
                                 <div className="px-4 py-5 sm:p-6 text-center text-gray-500">
-                                    No completed requests found.
+                                    No request history found.
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
@@ -154,14 +151,19 @@ const MyRequests = () => {
                                                     Details
                                                 </th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Date Completed
+                                                    Date
                                                 </th>
-
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Status
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Actions
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
                                             {requests
-                                                .filter(req => req.status === 'Approved')
+                                                .filter(req => req.status !== 'Pending')
                                                 .map((request) => (
                                                     <tr key={request._id}>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -171,9 +173,21 @@ const MyRequests = () => {
                                                             {request.bloodType || request.organ}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {request.updatedAt || 'N/A'}
+                                                            {new Date(request.updatedAt).toLocaleDateString() || 'N/A'}
                                                         </td>
-
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeColor(request.status)}`}>
+                                                                {request.status}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            <button
+                                                                onClick={() => handleViewDetails(request)}
+                                                                className="text-blue-600 hover:text-blue-900"
+                                                            >
+                                                                View Details
+                                                            </button>
+                                                        </td>
                                                     </tr>
                                                 ))}
                                         </tbody>
@@ -185,6 +199,68 @@ const MyRequests = () => {
                 </main>
             </div>
             <Footer />
+
+            {/* Modal for showing approval details */}
+            {showModal && selectedRequest && (
+                <div className="fixed z-10 inset-0 overflow-y-auto">
+                    <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+                            <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+                        </div>
+                        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                        <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                            <div>
+                                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                                    Request Details
+                                </h3>
+                                <div className="mt-2 space-y-3">
+                                    <p className="text-sm">
+                                        <strong>Type:</strong> {selectedRequest.type}
+                                    </p>
+                                    <p className="text-sm">
+                                        <strong>Details:</strong> {selectedRequest.bloodType || selectedRequest.organ}
+                                    </p>
+                                    <p className="text-sm">
+                                        <strong>Status:</strong>
+                                        <span className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeColor(selectedRequest.status)}`}>
+                                            {selectedRequest.status}
+                                        </span>
+                                    </p>
+                                    <div className="mt-3 p-3 bg-gray-100 rounded">
+                                        <p className="text-sm font-medium text-gray-700 mb-1">Message:</p>
+                                        {selectedRequest.status === 'Unavailable' ? (
+                                            <p className="text-sm text-gray-700">
+                                                Currently not available. We couldn't find a match for your request at this time.
+                                            </p>
+                                        ) : selectedRequest.approvalDetails?.message ? (
+                                            <p className="text-sm text-gray-700">
+                                                {selectedRequest.approvalDetails.message}
+                                            </p>
+                                        ) : (
+                                            <p className="text-sm text-gray-700">
+                                                {selectedRequest.status === 'Approved'
+                                                    ? 'Your request has been approved.'
+                                                    : selectedRequest.status === 'Rejected'
+                                                        ? 'Your request has been rejected.'
+                                                        : 'No additional details provided.'}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="mt-5 sm:mt-6">
+                                <button
+                                    type="button"
+                                    className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm"
+                                    onClick={closeModal}
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };

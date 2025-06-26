@@ -163,7 +163,11 @@ exports.login = async (req, res) => {
       _id: user._id,
       name: user.name || '',
       email: user.email,
-      status: 'approved',
+      bloodGroup: user.bloodGroup || '',
+      aadhar: user.aadhar || '',
+      address: user.address || '',
+      mobile: user.mobile || '',
+      status: user.status || 'approved',
       role: portal.toLowerCase(),
       token: generateToken(user._id, user.role),
     });

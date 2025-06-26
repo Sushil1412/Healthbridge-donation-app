@@ -44,21 +44,21 @@ const Footer = () => {
                             <div className="flex items-start">
                                 <FaMapMarkerAlt className="mt-1 mr-3 text-red-500" />
                                 <div>
-                                    <p className="font-medium">City General Hospital</p>
+                                    <p className="font-medium">City Hospital</p>
                                     <p className="text-gray-300">
-                                        123 Medical Center Drive<br />
-                                        Boston, MA 02115<br />
-                                        United States
+                                        Odisha bbsr<br />
+                                        Bhubaneswar, MA 759001<br />
+                                        India
                                     </p>
                                 </div>
                             </div>
                             <div className="flex items-center">
                                 <FaPhone className="mr-3 text-red-500" />
-                                <span className="text-gray-300">+1 (617) 555-0123</span>
+                                <span className="text-gray-300">+91 7777 555 89</span>
                             </div>
                             <div className="flex items-center">
                                 <FaEnvelope className="mr-3 text-red-500" />
-                                <span className="text-gray-300">info@citygeneral.org</span>
+                                <span className="text-gray-300">info@cityhospital.org</span>
                             </div>
                             <div className="flex items-center">
                                 <FaClock className="mr-3 text-red-500" />
