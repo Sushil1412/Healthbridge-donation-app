@@ -184,7 +184,7 @@ exports.login = async (req, res) => {
 exports.userrequest = async (req, res) => {
   const { name, neededBy, type, bloodType, organ, additionalInfo, email } = req.body;
 
-  console.log('Request body:', req.body); // Log incoming request
+  // console.log('Request body:', req.body); // Log incoming request
 
   try {
     // Validate required fields
@@ -213,7 +213,7 @@ exports.userrequest = async (req, res) => {
       name,
       type,
       bloodType: type === 'Blood' ? bloodType : undefined,
-      organ: type === 'Organ' ? organ : undefined,
+      organType: type === 'Organ' ? organ : undefined,
       additionalInfo,
       status: 'Pending',
       neededBy,

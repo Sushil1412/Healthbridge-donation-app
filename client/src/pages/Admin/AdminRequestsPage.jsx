@@ -67,13 +67,24 @@ const AdminRequestsPage = () => {
             setUpdatingId(currentRequestId);
 
             // Prepare data to send to server
+            const currentRequest = requests.find(req => req._id === currentRequestId);
+            var obtype = "";
+            if (currentRequest.type == 'Blood') {
+                obtype = currentRequest.bloodType;
+            } else {
+                obtype = currentRequest.organType;
+            }
             const approvalData = {
                 date: formData.date,
                 time: formData.time,
-                message: formData.message
+                message: formData.message,
+                type: currentRequest.type,       // Include bloodType if it exists
+                val: obtype
             };
 
             // Optimistic update
+
+            console.log("thie aat", currentRequest);
             setRequests(prevRequests =>
                 prevRequests.map(request =>
                     request._id === currentRequestId
@@ -82,7 +93,8 @@ const AdminRequestsPage = () => {
                             status: 'Approved',
                             approvalDetails: {
                                 ...approvalData,
-                                hospital: hospitalAddress
+                                hospital: hospitalAddress,
+
                             }
                         }
                         : request
@@ -139,7 +151,7 @@ const AdminRequestsPage = () => {
 
             await axios.patch(
                 `http://localhost:8000/api/auth/adminapplicationupdate`,
-                { requestId, status: newStatus }
+                { requestId, status: newStatus, }
             );
 
         } catch (err) {

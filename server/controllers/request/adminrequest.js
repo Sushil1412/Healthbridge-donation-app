@@ -90,6 +90,9 @@ exports.adminapplicationupdate = async (req, res) => {
         }
 
         // Find and update the request by its unique ID
+        if (status == 'Approved') {
+            console.log('this is id:', requestId);
+        }
         const updatedRequest = await UserRequest.findByIdAndUpdate(
             requestId,
             { status },

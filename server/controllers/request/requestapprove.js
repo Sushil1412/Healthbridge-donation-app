@@ -5,13 +5,23 @@ const { Resend } = require('resend');
 const { MailSlurp } = require('mailslurp-client');
 const Recipient = require('../../models/Recipient')
 const Donor = require('../../models/Donor');
+const BloodInventory = require('../../models/BloodInventory');
+const OrganInventory = require('../../models/OrganInventory');
 // Initialize MailSlurp with your API key
 const mailslurp = new MailSlurp({ apiKey: process.env.MAILSLURP_API_KEY });
 
 exports.requestapprove = async (req, res) => {
     try {
         const { id } = req.params;
-        const { date, time, message } = req.body;
+        const { date, time, message, type, val } = req.body;
+
+        // Validate required fields
+        if (!id || !date || !time || !type || !val) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields'
+            });
+        }
 
         // Hospital info
         const hospitalInfo = {
@@ -19,52 +29,119 @@ exports.requestapprove = async (req, res) => {
             address: "123 Medical Center Drive, Healthville, HV 12345",
             contact: "91+ 1111 2525 89"
         };
-        const readableDate = new Date(date).toDateString();
-        const confirmationMessage = `Your donation  will be available on ${readableDate} at ${time}. Please visit ${hospitalInfo.name}, ${hospitalInfo.address}. For queries: ${hospitalInfo.contact}`;
 
-        // Update database
-        console.log("hiii");
+        const readableDate = new Date(date).toDateString();
+        const confirmationMessage = message ||
+            `Your donation will be available on ${readableDate} at ${time}. ` +
+            `Please visit ${hospitalInfo.name}, ${hospitalInfo.address}. ` +
+            `For queries: ${hospitalInfo.contact}`;
+
+        // Update inventory based on type and value
+        let inventoryUpdate;
+        const normalizedType = type.toLowerCase();
+        const normalizedVal = val.toUpperCase();
+
+        if (normalizedType === 'blood') {
+            // Update blood inventory
+            inventoryUpdate = await BloodInventory.findOneAndUpdate(
+                { bloodType: normalizedVal },
+                { $inc: { units: -1 }, lastUpdated: new Date() },
+                { new: true }
+            );
+
+            if (!inventoryUpdate) {
+                return res.status(404).json({
+                    success: false,
+                    message: `Blood type ${normalizedVal} not found in inventory`
+                });
+            }
+        }
+        else if (normalizedType === 'organ') {
+            // Update organ inventory
+            inventoryUpdate = await OrganInventory.findOneAndUpdate(
+                { organType: val }, // Organs are case-sensitive as defined in enum
+                { $inc: { quantity: -1 } },
+                { new: true }
+            );
+
+            if (!inventoryUpdate) {
+                return res.status(404).json({
+                    success: false,
+                    message: `Organ type ${val} not found in inventory`
+                });
+            }
+        }
+        else {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid type - must be "blood" or "organ"'
+            });
+        }
+
+        // Check if quantity went negative
+        if ((inventoryUpdate.units !== undefined && inventoryUpdate.units < 0) ||
+            (inventoryUpdate.quantity !== undefined && inventoryUpdate.quantity < 0)) {
+            // Rollback the update
+            if (normalizedType === 'blood') {
+                await BloodInventory.findOneAndUpdate(
+                    { bloodType: normalizedVal },
+                    { $inc: { units: -1 } }
+                );
+            } else {
+                await OrganInventory.findOneAndUpdate(
+                    { organType: val },
+                    { $inc: { quantity: -1 } }
+                );
+            }
+            return res.status(400).json({
+                success: false,
+                message: 'Insufficient inventory quantity'
+            });
+        }
+
+        // Update the request status
         const updatedRequest = await UserRequest.findByIdAndUpdate(
             id,
             {
                 status: 'Approved',
-                approvalDetails: { date, time, message: confirmationMessage, hospital: hospitalInfo }
+                approvalDetails: {
+                    date,
+                    time,
+                    message: confirmationMessage,
+                    hospital: hospitalInfo
+                }
             },
             { new: true }
         );
 
         if (!updatedRequest) {
-            return res.status(404).json({ success: false, message: 'Request not found' });
+            // Rollback inventory update if request not found
+            if (normalizedType === 'blood') {
+                await BloodInventory.findOneAndUpdate(
+                    { bloodType: normalizedVal },
+                    { $inc: { units: 1 } }
+                );
+            } else {
+                await OrganInventory.findOneAndUpdate(
+                    { organType: val },
+                    { $inc: { quantity: 1 } }
+                );
+            }
+            return res.status(404).json({
+                success: false,
+                message: 'Request not found'
+            });
         }
 
-        // Send email via MailSlurp
-        const emailOptions = {
-            to: [updatedRequest.email],
-            from: 'notifications@mailslurp.com', // Use MailSlurp domain
-            subject: `${updatedRequest.type} Request Approved`,
-            body: `
-                <h2>Your ${updatedRequest.type} Request Has Been Approved</h2>
-                <p>Dear ${updatedRequest.name},</p>
-                
-                <h3>Appointment Details:</h3>
-                <p><strong>Date:</strong> ${new Date(date).toDateString()}</p>
-                <p><strong>Time:</strong> ${time}</p>
-                
-                <h3>Hospital Information:</h3>
-                <p>${hospitalInfo.name}<br>${hospitalInfo.address}<br>${hospitalInfo.contact}</p>
-            `,
-            isHTML: true
-        };
-
-        const sentEmail = await mailslurp.sendEmail(
-            process.env.MAILSLURP_INBOX_ID, // Your MailSlurp inbox ID
-            emailOptions
-        );
+        // Send email (your existing MailSlurp code here)
+        // ...
 
         res.status(200).json({
             success: true,
-            data: updatedRequest,
-            emailId: sentEmail.id // For tracking in MailSlurp dashboard
+            data: {
+                request: updatedRequest,
+                inventory: inventoryUpdate
+            }
         });
 
     } catch (error) {
@@ -75,6 +152,7 @@ exports.requestapprove = async (req, res) => {
         });
     }
 };
+
 
 
 // exports.updateuserprofile = async (req, res) => {
