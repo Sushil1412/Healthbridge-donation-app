@@ -31,7 +31,7 @@ exports.requestapprove = async (req, res) => {
         };
 
         const readableDate = new Date(date).toDateString();
-        const confirmationMessage = message ||
+        const confirmationMessage =
             `Your donation will be available on ${readableDate} at ${time}. ` +
             `Please visit ${hospitalInfo.name}, ${hospitalInfo.address}. ` +
             `For queries: ${hospitalInfo.contact}`;

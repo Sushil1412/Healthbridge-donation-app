@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const Pledge = require('../../models/Pledge');
 const BloodRequestDonor = require('../../models/BloodRequestDonor');
+const BloodInventory = require('../../models/BloodInventory')
 
 // Submit a new pledge
 exports.pledges = async (req, res) => {
@@ -100,6 +101,7 @@ exports.bloodRequestDonor = async (req, res) => {
             });
         }
 
+
         // Create new blood request
         const newRequest = await BloodRequestDonor.create({
             email: donorEmail,
@@ -163,12 +165,20 @@ exports.bloodrequestfordonor = async (req, res) => {
 exports.upadateBloodrequestdonor = async (req, res) => {
     try {
         const {
-            requestId, status
+            requestId, status, bloodGroup
         } = req.body;
 
         // console.log(requestId);
         if (!['accepted', 'rejected', 'pending'].includes(status)) {
             return res.status(400).json({ success: false, message: 'Invalid status' });
+        }
+        // console.log("thiiii", bloodGroup);
+        if (status == 'accepted') {
+            const updatedBloodGroup = await BloodInventory.findOneAndUpdate(
+                { bloodType: bloodGroup },
+                { $inc: { units: 1 } },
+                { new: true, upsert: true } // upsert: true creates the record if it doesn't exist
+            );
         }
 
         const updatedRequest = await BloodRequestDonor.findByIdAndUpdate(

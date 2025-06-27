@@ -45,10 +45,18 @@ const AdminHospitalRequests = () => {
                         : request
                 ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             );
-            // console.log(requestId);
+
+            // Find the current request to get bloodGroup
+            const currentRequest = requests.find(req => req._id === requestId);
+            const bloodGroup = currentRequest?.bloodGroup || ""; // Use bloodType or whatever field contains the blood group
+            console.log("this is", bloodGroup);
             await axios.patch(
                 `http://localhost:8000/api/auth/upadateBloodrequestdonor`,
-                { requestId, status: newStatus }
+                {
+                    requestId,
+                    status: newStatus,
+                    bloodGroup: bloodGroup
+                }
             );
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update request status');
@@ -64,7 +72,6 @@ const AdminHospitalRequests = () => {
             setUpdatingId(null);
         }
     };
-
     const formatDate = (dateString) => {
         const options = { year: 'numeric', month: 'short', day: 'numeric' };
         return new Date(dateString).toLocaleDateString(undefined, options);

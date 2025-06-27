@@ -84,7 +84,7 @@ const AdminRequestsPage = () => {
 
             // Optimistic update
 
-            console.log("thie aat", currentRequest);
+            // console.log("thie aat", currentRequest);
             setRequests(prevRequests =>
                 prevRequests.map(request =>
                     request._id === currentRequestId
