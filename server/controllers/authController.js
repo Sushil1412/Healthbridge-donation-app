@@ -16,7 +16,7 @@ const generateToken = (id, role) => {
 // @route   POST /api/auth/signup
 // @access  Public
 exports.signup = async (req, res) => {
-  const { name, email, password, role, bloodGroup, aadhar, hospitalId, address } = req.body;
+  const { name, email, password, role, bloodGroup, aadhar, address, location } = req.body;
 
   if (!role) {
     return res.status(400).json({ message: 'Role is required' });
@@ -31,38 +31,52 @@ exports.signup = async (req, res) => {
 
     switch (role.toLowerCase()) {
       case 'recipient':
-        if (!name || !email || !password || !bloodGroup || !aadhar) {
-          return res.status(400).json({ message: 'Please provide all required fields for recipient: name, email, password, bloodGroup, aadhar' });
+        if (!name || !email || !password || !address || !location) {
+          return res.status(400).json({ message: 'Please provide all required fields for recipient: name, email, password, address, location' });
         }
-        existingUser = await Recipient.findOne({ $or: [{ email }, { aadhar }] });
+
+        existingUser = await Recipient.findOne({ $or: [{ email }] });
         if (existingUser) {
-          const field = existingUser.email === email ? 'Email' : 'Aadhar';
-          return res.status(400).json({ message: `${field} already exists` });
+          return res.status(400).json({ message: 'Email already exists' });
         }
-        user = await Recipient.create({ name, email, password, bloodGroup, aadhar, role });
+        console.log(email);
+        user = await Recipient.create({
+          name,
+          email,
+          password,
+          role,
+          address,
+          location: {
+            type: 'Point',
+            coordinates: location.coordinates
+          }
+        });
         break;
+
       case 'donor':
-        if (!name || !email || !password || !bloodGroup || !aadhar) {
-          return res.status(400).json({ message: 'Please provide all required fields for donor: name, email, password, bloodGroup, aadhar' });
+        if (!name || !email || !password || !bloodGroup || !aadhar || !address || !location) {
+          return res.status(400).json({ message: 'Please provide all required fields for donor: name, email, password, bloodGroup, aadhar, address, location' });
         }
         existingUser = await Donor.findOne({ $or: [{ email }, { aadhar }] });
         if (existingUser) {
           const field = existingUser.email === email ? 'Email' : 'Aadhar';
           return res.status(400).json({ message: `${field} already exists` });
         }
-        user = await Donor.create({ name, email, password, bloodGroup, aadhar, role });
+        user = await Donor.create({
+          name,
+          email,
+          password,
+          role,
+          bloodGroup,
+          aadhar,
+          address,
+          location: {
+            type: 'Point',
+            coordinates: location.coordinates
+          }
+        });
         break;
-      case 'hospital':
-        if (!name || !email || !password || !hospitalId || !address) {
-          return res.status(400).json({ message: 'Please provide all required fields for hospital: name, email, password, hospitalId, address' });
-        }
-        existingUser = await Hospital.findOne({ $or: [{ email }, { hospitalId }] });
-        if (existingUser) {
-          const field = existingUser.email === email ? 'Email' : 'Hospital ID';
-          return res.status(400).json({ message: `${field} already exists` });
-        }
-        user = await Hospital.create({ name, email, password, hospitalId, role, address });
-        break;
+
       default:
         return res.status(400).json({ message: 'Invalid role specified' });
     }
@@ -73,15 +87,13 @@ exports.signup = async (req, res) => {
         userId: user._id,
         email: user.email,
         role: user.role,
-        // You might want to send a token directly upon signup for auto-login
-        // token: generateToken(user._id, user.role),
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
     }
   } catch (error) {
     console.error('Signup Error:', error);
-    if (error.code === 11000) { // MongoError: E11000 duplicate key error
+    if (error.code === 11000) {
       const field = Object.keys(error.keyValue)[0];
       return res.status(400).json({ message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists.` });
     }

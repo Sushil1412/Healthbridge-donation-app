@@ -4,6 +4,7 @@ const router = express.Router();
 const Pledge = require('../../models/Pledge');
 const BloodRequestDonor = require('../../models/BloodRequestDonor');
 const BloodInventory = require('../../models/BloodInventory')
+const Donor = require('../../models/Donor');
 
 // Submit a new pledge
 exports.pledges = async (req, res) => {
@@ -46,6 +47,7 @@ exports.hospitalmypledge = async (req, res) => {
     try {
         const dtype = req.query.donationType;
         const pledges = await Pledge.find({ donationType: dtype }).sort({ createdAt: -1 });
+
         res.json({
             success: true,
             data: pledges
@@ -165,7 +167,7 @@ exports.bloodrequestfordonor = async (req, res) => {
 exports.upadateBloodrequestdonor = async (req, res) => {
     try {
         const {
-            requestId, status, bloodGroup
+            requestId, status, bloodGroup, email
         } = req.body;
 
         // console.log(requestId);
@@ -183,9 +185,32 @@ exports.upadateBloodrequestdonor = async (req, res) => {
 
         const updatedRequest = await BloodRequestDonor.findByIdAndUpdate(
             requestId,
-            { status },
+            {
+                status,
+                lastDonationDate: status === 'accepted' || status === 'approved' ? new Date() : undefined
+            },
             { new: true }
         );
+
+        const updatedDonor = await Donor.findOneAndUpdate(
+            { email: email },  // Find by email
+            {
+                $set: {
+                    lastDonationDate: new Date()  // Update lastDonationDate to current date
+                }
+            },
+            { new: true }  // Return the updated document
+        );
+        const updatePledge = await Pledge.findOneAndUpdate(
+            { email: email },  // Find by email
+            {
+                $set: {
+                    lastDonationDate: status === 'accepted' || status === 'approved' ? new Date() : undefined
+                }
+            },
+            { new: true }  // Return the updated document
+        );
+
 
         if (!updatedRequest) {
             return res.status(404).json({ success: false, message: 'Request not found' });

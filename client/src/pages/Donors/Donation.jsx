@@ -10,7 +10,7 @@ const AdminHospitalRequests = () => {
     const [error, setError] = useState('');
     const [updatingId, setUpdatingId] = useState(null);
     const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'history'
-
+    const email = localStorage.getItem('email');
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -55,7 +55,8 @@ const AdminHospitalRequests = () => {
                 {
                     requestId,
                     status: newStatus,
-                    bloodGroup: bloodGroup
+                    bloodGroup: bloodGroup,
+                    email: email
                 }
             );
         } catch (err) {

@@ -42,6 +42,17 @@ const DonorSchema = new mongoose.Schema({
         unique: true,
         // Add Aadhar validation if needed
     },
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            required: true
+        },
+        coordinates: {
+            type: [Number],
+            required: true
+        }
+    },
     status: {
         type: String,
         enum: ['approved', 'inactive', 'pending'], // Customize statuses as needed
@@ -51,6 +62,10 @@ const DonorSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    lastDonationDate: {
+        type: Date,
+        default: null // Will be set when status changes to 'approved'
+    }
 });
 
 // Hash password before saving

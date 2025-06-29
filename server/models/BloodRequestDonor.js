@@ -18,7 +18,6 @@ const bloodRequestDonorSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-
   bloodGroup: {
     type: String,
     required: true,
@@ -31,7 +30,19 @@ const bloodRequestDonorSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  lastDonationDate: {
+    type: Date,
+    default: null // Will be set when status changes to 'approved'
   }
+});
+
+// Middleware to update lastDonationDate when status changes to 'approved'
+bloodRequestDonorSchema.pre('save', function (next) {
+  if (this.isModified('status') && this.status === 'accepted') {
+    this.lastDonationDate = new Date();
+  }
+  next();
 });
 
 module.exports = mongoose.model('BloodRequestDonor', bloodRequestDonorSchema);

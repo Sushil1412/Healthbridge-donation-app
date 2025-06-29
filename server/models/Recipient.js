@@ -31,17 +31,19 @@ const RecipientSchema = new mongoose.Schema({
         required: [true, 'Please provide your address'],
         default: 'not available'
     },
-    bloodGroup: {
-        type: String,
-        required: [true, 'Blood group is required'],
-        enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            required: true
+        },
+        coordinates: {
+            type: [Number],
+            required: true
+        }
     },
-    aadhar: {
-        type: String,
-        required: [true, 'Aadhar number is required'],
-        unique: true,
-        // Add Aadhar validation if needed (e.g., regex for format)
-    },
+
     createdAt: {
         type: Date,
         default: Date.now,
