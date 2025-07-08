@@ -21,6 +21,7 @@
     "mailslurp-client": "^15.24.1",
     "mongoose": "^8.15.0",
     "nodemailer": "^7.0.3",
+    "nodemon": "^3.1.10",
     "react-toastify": "^11.0.5",
     "resend": "^4.5.2",
     "socket.io": "^4.8.1",
