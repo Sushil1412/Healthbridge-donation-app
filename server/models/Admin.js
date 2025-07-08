@@ -11,6 +11,17 @@ const AdminSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            required: true
+        },
+        coordinates: {
+            type: [Number],
+            required: true
+        }
+    },
     createdAt: {
         type: Date,
         default: Date.now,

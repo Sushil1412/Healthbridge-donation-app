@@ -142,10 +142,27 @@ exports.login = async (req, res) => {
     }
 
     // Add null check for password comparison
-    if (portal == 'admin') {
+    if (portal == 'hospital') {
+
       if (user.password != password) {
         return res.status(401).json({ message: 'Invalid password' });
       }
+
+      res.json({
+        _id: user._id,
+        name: user.name || '',
+        email: user.email,
+        // bloodGroup: user.bloodGroup || '',
+        // aadhar: user.aadhar || '',
+        // address: user.address || '',
+        mobile: user.mobile || '',
+        status: user.status || 'approved',
+        // longitude: user.location.coordinates[1] || 12,
+        // latitude: user.location.coordinates[0] || 12,
+        role: portal.toLowerCase(),
+        token: generateToken(user._id, user.role),
+      });
+
     } else {
 
       if (!password || !user.password) {
@@ -157,33 +174,35 @@ exports.login = async (req, res) => {
       if (!isMatch) {
         return res.status(401).json({ message: 'Invalid  password' });
       }
+
+
+      // if(portal == 'donor'){
+      //   res.json({
+      //     _id: user._id,
+      //     name: user.name || '',
+      //     email: user.email,
+      //     status: 'approved',
+      //     role: portal.toLowerCase(),
+      //     token: generateToken(user._id, user.role),
+      //   });
+      // }
+      // console.log("this name is", user.name);
+
+      res.json({
+        _id: user._id,
+        name: user.name || '',
+        email: user.email,
+        bloodGroup: user.bloodGroup || '',
+        aadhar: user.aadhar || '',
+        address: user.address || '',
+        mobile: user.mobile || '',
+        status: user.status || 'approved',
+        longitude: user.location.coordinates[1] || 12,
+        latitude: user.location.coordinates[0] || 12,
+        role: portal.toLowerCase(),
+        token: generateToken(user._id, user.role),
+      });
     }
-
-    // if(portal == 'donor'){
-    //   res.json({
-    //     _id: user._id,
-    //     name: user.name || '',
-    //     email: user.email,
-    //     status: 'approved',
-    //     role: portal.toLowerCase(),
-    //     token: generateToken(user._id, user.role),
-    //   });
-    // }
-    // console.log("this name is", user.name);
-
-    res.json({
-      _id: user._id,
-      name: user.name || '',
-      email: user.email,
-      bloodGroup: user.bloodGroup || '',
-      aadhar: user.aadhar || '',
-      address: user.address || '',
-      mobile: user.mobile || '',
-      status: user.status || 'approved',
-      role: portal.toLowerCase(),
-      token: generateToken(user._id, user.role),
-    });
-
   } catch (error) {
     console.error('Login Error:', error);
     res.status(500).json({
@@ -194,7 +213,7 @@ exports.login = async (req, res) => {
   }
 };
 exports.userrequest = async (req, res) => {
-  const { name, neededBy, type, bloodType, organ, additionalInfo, email } = req.body;
+  const { name, neededBy, type, bloodType, organ, additionalInfo, email, address, longitude, latitude } = req.body;
 
   // console.log('Request body:', req.body); // Log incoming request
 
@@ -228,7 +247,10 @@ exports.userrequest = async (req, res) => {
       organType: type === 'Organ' ? organ : undefined,
       additionalInfo,
       status: 'Pending',
+      longitude: longitude,
+      latitude: latitude,
       neededBy,
+      address,
       createdAt: new Date()
     });
 

@@ -88,6 +88,8 @@ const Pledge = () => {
 
     try {
       // Prepare the data to send
+      const x = localStorage.getItem('longitude');
+      const y = localStorage.getItem('latitude');
       const pledgeData = {
         ...pledge,
         // Remove any empty fields that aren't required
@@ -95,6 +97,8 @@ const Pledge = () => {
         city: pledge.city,
         state: pledge.state,
         pincode: pledge.pincode,
+        longitude: x,
+        latitude: y,
         bloodType: pledge.donationType === 'blood' ? pledge.bloodType : undefined,
         organTypes: pledge.donationType === 'organ' ? pledge.organTypes : undefined
       };

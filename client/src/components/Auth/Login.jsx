@@ -72,6 +72,10 @@ const Login = () => {
             localStorage.setItem('userId', data._id);
             localStorage.setItem('email', data.email);
             localStorage.setItem('name', data.name);
+            localStorage.setItem('address', data.address);
+            localStorage.setItem('longitude', data.longitude);
+            localStorage.setItem('latitude', data.latitude);
+
 
             login({
                 token: data.token,

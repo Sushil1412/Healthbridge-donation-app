@@ -92,6 +92,7 @@ exports.bloodRequestDonor = async (req, res) => {
             bloodGroup,
             donorName,
             donorPhone,
+            address,
             status = 'pending'
         } = req.body;
         console.log(donorEmail);
@@ -111,7 +112,8 @@ exports.bloodRequestDonor = async (req, res) => {
             needByTime,
             purpose,
             bloodGroup,
-            status
+            status,
+            address
         });
 
         res.status(201).json({
@@ -152,10 +154,6 @@ exports.bloodrequestfordonor = async (req, res) => {
     try {
         const email = req.query.email;
         const data = await BloodRequestDonor.find({ email }).sort({ createdAt: -1 });
-
-        // // Separate into pending and history
-        // const pending = requests.filter(req => req.status === 'pending');
-        // const history = requests.filter(req => req.status !== 'pending');
 
         res.json({ success: true, data });
     } catch (error) {

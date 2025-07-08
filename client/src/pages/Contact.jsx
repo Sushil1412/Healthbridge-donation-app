@@ -8,17 +8,47 @@ const Contact = () => {
         subject: '',
         message: ''
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitStatus, setSubmitStatus] = useState(null);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Add your form submission logic here
-        alert(`Thank you ${formData.name}! Your message has been sent.`);
-        setFormData({ name: '', email: '', subject: '', message: '' });
+        setIsSubmitting(true);
+        setSubmitStatus(null);
+
+        try {
+            const response = await fetch("https://api.web3forms.com/submit", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    access_key: "9743bd21-e207-4e33-8b05-0f7260bb1144", // Replace with your actual access key
+                    name: formData.name,
+                    email: formData.email,
+                    subject: formData.subject,
+                    message: formData.message,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                setSubmitStatus({ success: true, message: `Thank you ${formData.name}! Your message has been sent successfully.` });
+                setFormData({ name: '', email: '', subject: '', message: '' });
+            } else {
+                setSubmitStatus({ success: false, message: result.message || 'Failed to send message. Please try again.' });
+            }
+        } catch (error) {
+            setSubmitStatus({ success: false, message: 'An error occurred. Please try again later.' });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -37,7 +67,23 @@ const Contact = () => {
                     {/* Contact Form */}
                     <div className="bg-white shadow rounded-lg p-6 sm:p-8">
                         <h2 className="text-xl font-semibold text-gray-800 mb-6">Send us a message</h2>
+                        {submitStatus && (
+                            <div className={`mb-6 p-4 rounded-md ${submitStatus.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {submitStatus.message}
+                            </div>
+                        )}
                         <form onSubmit={handleSubmit} className="space-y-6">
+                            <input
+                                type="hidden"
+                                name="access_key"
+                                value="YOUR_WEB3FORMS_ACCESS_KEY"
+                            />
+                            <input
+                                type="hidden"
+                                name="redirect"
+                                value="https://web3forms.com/success"
+                            />
+
                             <div>
                                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                                     Full Name
@@ -101,9 +147,10 @@ const Contact = () => {
                             <div>
                                 <button
                                     type="submit"
-                                    className="w-full bg-red-600 text-white py-2 px-6 rounded-md hover:bg-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                    disabled={isSubmitting}
+                                    className={`w-full bg-red-600 text-white py-2 px-6 rounded-md hover:bg-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                                 >
-                                    Send Message
+                                    {isSubmitting ? 'Sending...' : 'Send Message'}
                                 </button>
                             </div>
                         </form>
@@ -123,7 +170,7 @@ const Contact = () => {
                                     </div>
                                     <div className="ml-3">
                                         <h3 className="text-sm font-medium text-gray-900">Headquarters</h3>
-                                        <p className="text-sm text-gray-500"> City hospital, <br />Bhubaneswar, Odisha 750017</p>
+                                        <p className="text-sm text-gray-500">City hospital, <br />Bhubaneswar, Odisha 750017</p>
                                     </div>
                                 </div>
 
@@ -155,7 +202,7 @@ const Contact = () => {
 
                         <div className="bg-white shadow rounded-lg overflow-hidden">
                             <iframe
-                                title="city Hospital Bhubaneswar Location"
+                                title="City Hospital Bhubaneswar Location"
                                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3768.497238496469!2d85.81950111490364!3d20.296757086393374!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a1909bb4dcd7f03%3A0x1d301dcb2333ed8a!2sApollo%20Hospitals%20Bhubaneswar!5e0!3m2!1sen!2sin!4v1718184000000"
                                 width="100%"
                                 height="300"
@@ -164,7 +211,6 @@ const Contact = () => {
                                 loading="lazy"
                                 referrerPolicy="no-referrer-when-downgrade"
                             />
-
                         </div>
                     </div>
                 </div>

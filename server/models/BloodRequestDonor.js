@@ -31,6 +31,10 @@ const bloodRequestDonorSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  address: {
+    type: String,
+    default: null
+  },
   lastDonationDate: {
     type: Date,
     default: null // Will be set when status changes to 'approved'

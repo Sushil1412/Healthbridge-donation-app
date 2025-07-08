@@ -216,17 +216,17 @@ const RequestCard = ({ request, updatingId, onApprove, onReject, isHistory = fal
                     <span className="font-medium">Blood Type:</span> {request.bloodGroup}
                 </p>
                 <p className="text-gray-600 mb-4">
-                    <span className="font-medium">Needed by:</span> {formatDate(request.needByDate)}
+                    <span className="font-medium">Needed by:</span> {formatDate(request.needByDate)}<span> Time: {(request.needByTime)}</span>
                 </p>
                 <p className="text-gray-600 mb-4">
-                    <span className="font-medium">Needed by:</span> {(request.needByTime)}
+                    <span className="font-medium">Address:{request.address} </span>
                 </p>
                 <p className="text-gray-600 mb-4">
                     <span className="font-medium">Purpose:</span> {request.purpose}
                 </p>
-                <p className="text-gray-600 mb-4">
-                    <span className="font-medium">Hospital Name:City Hospital</span>
-                </p>
+                {/* <p className="text-gray-600 mb-4">
+                    <span className="font-medium">Hospital Name:{request.name}</span>
+                </p> */}
 
                 {request.notes && (
                     <div className="bg-gray-50 p-3 rounded-md mb-4">

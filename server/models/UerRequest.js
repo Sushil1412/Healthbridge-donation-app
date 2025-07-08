@@ -39,6 +39,17 @@ const UserRequestSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
+    address: {
+        type: String,
+        default: null,
+    },
+    longitude: {
+        type: Number
+    },
+    latitude: {
+        type: Number
+    },
+
     approvalDetails: {
         approvedDate: {
             type: Date,
@@ -52,6 +63,7 @@ const UserRequestSchema = new mongoose.Schema({
             type: String,
             trim: true
         },
+
         hospital: {
             name: {
                 type: String,

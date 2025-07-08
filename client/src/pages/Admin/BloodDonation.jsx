@@ -87,6 +87,7 @@ export default function BloodDonationCard() {
                 bloodGroup: selectedDonor.bloodType,
                 donorName: selectedDonor.fullName,
                 donorPhone: selectedDonor.phone,
+                address: 'City Hospital',
                 status: "pending" // Adding status field
             };
             console.log(requestData);

@@ -69,8 +69,10 @@ exports.adminupdate = async (req, res) => {
 exports.adminapplication = async (req, res) => {
     try {
         const requests = await UserRequest.find({});
+        // console.log(requests);
         res.json(requests);
         // console.log(requests);
+
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -148,7 +150,7 @@ exports.hospitalinventory = async (req, res) => {
         if (!hospital) {
             return res.status(404).json({ message: 'Hospital not found' });
         }
-
+        console.log()
         const inventory = await BloodInventory.find({ hospitalId: hospital.hospitalId });
         res.json(inventory);
     } catch (err) {

@@ -13,7 +13,7 @@ const mailslurp = new MailSlurp({ apiKey: process.env.MAILSLURP_API_KEY });
 exports.requestapprove = async (req, res) => {
     try {
         const { id } = req.params;
-        const { date, time, message, type, val } = req.body;
+        const { date, time, message, type, val, byDonor } = req.body;
 
         // Validate required fields
         if (!id || !date || !time || !type || !val) {
@@ -36,67 +36,71 @@ exports.requestapprove = async (req, res) => {
             `Please visit ${hospitalInfo.name}, ${hospitalInfo.address}. ` +
             `For queries: ${hospitalInfo.contact}`;
 
-        // Update inventory based on type and value
-        let inventoryUpdate;
-        const normalizedType = type.toLowerCase();
-        const normalizedVal = val.toUpperCase();
+        let inventoryUpdate = null;
 
-        if (normalizedType === 'blood') {
-            // Update blood inventory
-            inventoryUpdate = await BloodInventory.findOneAndUpdate(
-                { bloodType: normalizedVal },
-                { $inc: { units: -1 }, lastUpdated: new Date() },
-                { new: true }
-            );
+        // Only update inventory if not by donor
+        if (!byDonor) {
+            // Update inventory based on type and value
+            const normalizedType = type.toLowerCase();
+            const normalizedVal = val.toUpperCase();
 
-            if (!inventoryUpdate) {
-                return res.status(404).json({
-                    success: false,
-                    message: `Blood type ${normalizedVal} not found in inventory`
-                });
-            }
-        }
-        else if (normalizedType === 'organ') {
-            // Update organ inventory
-            inventoryUpdate = await OrganInventory.findOneAndUpdate(
-                { organType: val }, // Organs are case-sensitive as defined in enum
-                { $inc: { quantity: -1 } },
-                { new: true }
-            );
-
-            if (!inventoryUpdate) {
-                return res.status(404).json({
-                    success: false,
-                    message: `Organ type ${val} not found in inventory`
-                });
-            }
-        }
-        else {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid type - must be "blood" or "organ"'
-            });
-        }
-
-        // Check if quantity went negative
-        if ((inventoryUpdate.units !== undefined && inventoryUpdate.units < 0) ||
-            (inventoryUpdate.quantity !== undefined && inventoryUpdate.quantity < 0)) {
-            // Rollback the update
             if (normalizedType === 'blood') {
-                await BloodInventory.findOneAndUpdate(
+                // Update blood inventory
+                inventoryUpdate = await BloodInventory.findOneAndUpdate(
                     { bloodType: normalizedVal },
-                    { $inc: { units: -1 } }
+                    { $inc: { units: -1 }, lastUpdated: new Date() },
+                    { new: true }
                 );
-            } else {
-                await OrganInventory.findOneAndUpdate(
-                    { organType: val },
-                    { $inc: { quantity: -1 } }
-                );
+
+                if (!inventoryUpdate) {
+                    return res.status(404).json({
+                        success: false,
+                        message: `Blood type ${normalizedVal} not found in inventory`
+                    });
+                }
             }
-            return res.status(400).json({
-                success: false,
-                message: 'Insufficient inventory quantity'
-            });
+            else if (normalizedType === 'organ') {
+                // Update organ inventory
+                inventoryUpdate = await OrganInventory.findOneAndUpdate(
+                    { organType: val }, // Organs are case-sensitive as defined in enum
+                    { $inc: { quantity: -1 } },
+                    { new: true }
+                );
+
+                if (!inventoryUpdate) {
+                    return res.status(404).json({
+                        success: false,
+                        message: `Organ type ${val} not found in inventory`
+                    });
+                }
+            }
+            else {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid type - must be "blood" or "organ"'
+                });
+            }
+
+            // Check if quantity went negative
+            if ((inventoryUpdate.units !== undefined && inventoryUpdate.units < 0) ||
+                (inventoryUpdate.quantity !== undefined && inventoryUpdate.quantity < 0)) {
+                // Rollback the update
+                if (normalizedType === 'blood') {
+                    await BloodInventory.findOneAndUpdate(
+                        { bloodType: normalizedVal },
+                        { $inc: { units: 1 } }
+                    );
+                } else {
+                    await OrganInventory.findOneAndUpdate(
+                        { organType: val },
+                        { $inc: { quantity: 1 } }
+                    );
+                }
+                return res.status(400).json({
+                    success: false,
+                    message: 'Insufficient inventory quantity'
+                });
+            }
         }
 
         // Update the request status
@@ -107,7 +111,7 @@ exports.requestapprove = async (req, res) => {
                 approvalDetails: {
                     date,
                     time,
-                    message: confirmationMessage,
+                    message: byDonor ? message : confirmationMessage,
                     hospital: hospitalInfo
                 }
             },
@@ -115,17 +119,19 @@ exports.requestapprove = async (req, res) => {
         );
 
         if (!updatedRequest) {
-            // Rollback inventory update if request not found
-            if (normalizedType === 'blood') {
-                await BloodInventory.findOneAndUpdate(
-                    { bloodType: normalizedVal },
-                    { $inc: { units: 1 } }
-                );
-            } else {
-                await OrganInventory.findOneAndUpdate(
-                    { organType: val },
-                    { $inc: { quantity: 1 } }
-                );
+            // Rollback inventory update if request not found and not by donor
+            if (!byDonor) {
+                if (type.toLowerCase() === 'blood') {
+                    await BloodInventory.findOneAndUpdate(
+                        { bloodType: val.toUpperCase() },
+                        { $inc: { units: 1 } }
+                    );
+                } else {
+                    await OrganInventory.findOneAndUpdate(
+                        { organType: val },
+                        { $inc: { quantity: 1 } }
+                    );
+                }
             }
             return res.status(404).json({
                 success: false,
@@ -152,8 +158,6 @@ exports.requestapprove = async (req, res) => {
         });
     }
 };
-
-
 
 // exports.updateuserprofile = async (req, res) => {
 //     try {

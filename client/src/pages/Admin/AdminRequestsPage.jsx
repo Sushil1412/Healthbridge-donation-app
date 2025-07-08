@@ -13,8 +13,12 @@ const AdminRequestsPage = () => {
     const [formData, setFormData] = useState({
         date: '',
         time: '',
-        message: ''
+        message: '',
+        byDonor: false
     });
+    const [showDonorMatchDialog, setShowDonorMatchDialog] = useState(false);
+    const [matchedDonors, setMatchedDonors] = useState([]);
+    const [donorsLoading, setDonorsLoading] = useState(false);
 
     // Static hospital address data
     const hospitalAddress = {
@@ -47,12 +51,11 @@ const AdminRequestsPage = () => {
         setCurrentRequestId(requestId);
         setShowApprovalForm(true);
     };
-
     const handleFormChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: type === 'radio' ? value === 'true' : value
         }));
     };
 
@@ -78,13 +81,11 @@ const AdminRequestsPage = () => {
                 date: formData.date,
                 time: formData.time,
                 message: formData.message,
-                type: currentRequest.type,       // Include bloodType if it exists
-                val: obtype
+                type: currentRequest.type,
+                val: obtype,
+                byDonor: formData.byDonor,
             };
 
-            // Optimistic update
-
-            // console.log("thie aat", currentRequest);
             setRequests(prevRequests =>
                 prevRequests.map(request =>
                     request._id === currentRequestId
@@ -94,20 +95,17 @@ const AdminRequestsPage = () => {
                             approvalDetails: {
                                 ...approvalData,
                                 hospital: hospitalAddress,
-
                             }
                         }
                         : request
                 ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             );
 
-            // Send to server - Note the URL change to include ID
             await axios.patch(
                 `http://localhost:8000/api/auth/requestapprove/${currentRequestId}`,
                 approvalData
             );
 
-            // Reset form and close
             setFormData({
                 date: '',
                 time: '',
@@ -120,7 +118,6 @@ const AdminRequestsPage = () => {
             setError(err.response?.data?.message || 'Failed to approve request');
             console.error('Approval error:', err);
 
-            // Revert on error by refetching
             const userResponse = await axios.get('http://localhost:8000/api/auth/adminapplication');
             const sortedUserRequests = userResponse.data.sort((a, b) =>
                 new Date(b.createdAt) - new Date(a.createdAt)
@@ -140,7 +137,6 @@ const AdminRequestsPage = () => {
         try {
             setUpdatingId(requestId);
 
-            // Optimistic update for user requests
             setRequests(prevRequests =>
                 prevRequests.map(request =>
                     request._id === requestId
@@ -158,12 +154,70 @@ const AdminRequestsPage = () => {
             setError(err.response?.data?.message || 'Failed to update request status');
             console.error('Update error:', err);
 
-            // Revert on error by refetching
             const userResponse = await axios.get('http://localhost:8000/api/auth/adminapplication');
             const sortedUserRequests = userResponse.data.sort((a, b) =>
                 new Date(b.createdAt) - new Date(a.createdAt)
             );
             setRequests(sortedUserRequests);
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
+    const handleMatchDonors = async (requestId) => {
+        try {
+            setDonorsLoading(true);
+            setCurrentRequestId(requestId);
+
+            // Find the current request
+            const currentRequest = requests.find(req => req._id === requestId);
+            console.log("thisc", currentRequest.location);
+            // Call API to find matched donors
+            const response = await axios.post('http://localhost:8000/api/auth/findDonors', {
+                bloodType: currentRequest.bloodType,
+                longitude: currentRequest.longitude,
+                latitude: currentRequest.latitude,
+                radius: 50 // 50 km radius
+            });
+
+            setMatchedDonors(response.data);
+            setShowDonorMatchDialog(true);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to find matched donors');
+            console.error('Donor match error:', err);
+        } finally {
+            setDonorsLoading(false);
+        }
+    };
+
+    const handleSendDonorRequest = async (donorId, email) => {
+        try {
+            setUpdatingId(email);
+            console.log("this iii", email);
+            const currentRequest = requests.find(req => req._id === currentRequestId);
+
+            // Prepare request data
+            const requestData = {
+                recipientName: currentRequest.name,
+                recipientAddress: currentRequest.address, // Assuming address is stored in the request
+                bloodType: currentRequest.bloodType,
+                neededBy: currentRequest.neededBy,
+                hospitalDetails: hospitalAddress
+            };
+
+            // Send request to donor
+            await axios.post(`http://localhost:8000/api/auth/sendDonorRequest/${email}`, requestData);
+
+            // Update UI
+            setMatchedDonors(prev => prev.map(donor =>
+                donor._id === donorId
+                    ? { ...donor, requestSent: true }
+                    : donor
+            ));
+
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to send request to donor');
+            console.error('Send donor request error:', err);
         } finally {
             setUpdatingId(null);
         }
@@ -206,6 +260,7 @@ const AdminRequestsPage = () => {
                             <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
                                 <h2 className="text-xl font-bold mb-4">Approve Request</h2>
                                 <form onSubmit={handleFormSubmit}>
+                                    {/* Existing form fields... */}
                                     <div className="mb-4">
                                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="date">
                                             Available Date
@@ -235,9 +290,46 @@ const AdminRequestsPage = () => {
                                             required
                                         />
                                     </div>
+
+                                    {/* New Radio Button Group for byDonor */}
+                                    <div className="mb-4">
+                                        <label className="block text-gray-700 text-sm font-bold mb-2">
+                                            Approval Type
+                                        </label>
+                                        <div className="flex items-center space-x-4">
+                                            <label className="inline-flex items-center">
+                                                <input
+                                                    type="radio"
+                                                    name="byDonor"
+                                                    value="false"
+                                                    checked={formData.byDonor === false}
+                                                    onChange={() => handleFormChange({ target: { name: 'byDonor', value: false } })}
+                                                    className="form-radio h-4 w-4 text-green-600"
+                                                />
+                                                <span className="ml-2 text-gray-700">Standard Approval</span>
+                                            </label>
+                                            <label className="inline-flex items-center">
+                                                <input
+                                                    type="radio"
+                                                    name="byDonor"
+                                                    value="true"
+                                                    checked={formData.byDonor === true}
+                                                    onChange={() => handleFormChange({ target: { name: 'byDonor', value: true } })}
+                                                    className="form-radio h-4 w-4 text-green-600"
+                                                />
+                                                <span className="ml-2 text-gray-700">Donor Direct Approval</span>
+                                            </label>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {formData.byDonor
+                                                ? "This will use your custom message and won't update inventory"
+                                                : "This will send standard confirmation and update inventory"}
+                                        </p>
+                                    </div>
+
                                     <div className="mb-4">
                                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="message">
-                                            Additional Message (Optional)
+                                            {formData.byDonor ? "Message to Recipient" : "Additional Message (Optional)"}
                                         </label>
                                         <textarea
                                             id="message"
@@ -246,9 +338,13 @@ const AdminRequestsPage = () => {
                                             onChange={handleFormChange}
                                             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                                             rows="3"
-                                            placeholder="Any additional instructions for the user..."
+                                            placeholder={formData.byDonor
+                                                ? "Enter message to coordinate with recipient directly..."
+                                                : "Any additional instructions for the user..."}
+                                            required={formData.byDonor}
                                         />
                                     </div>
+
                                     <div className="mb-4 p-3 bg-gray-100 rounded">
                                         <h3 className="font-bold text-sm mb-1">Hospital Information:</h3>
                                         <p className="text-sm">{hospitalAddress.name}</p>
@@ -279,7 +375,76 @@ const AdminRequestsPage = () => {
                         </div>
                     )}
 
-                    {/* Rest of your existing code... */}
+                    {/* Donor Match Dialog */}
+                    {showDonorMatchDialog && (
+                        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto">
+                                <h2 className="text-xl font-bold mb-4">Matched Donors</h2>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    The following donors have the same blood type and are within 50 km radius:
+                                </p>
+
+                                {donorsLoading ? (
+                                    <div className="flex justify-center items-center h-32">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
+                                    </div>
+                                ) : matchedDonors.length === 0 ? (
+                                    <div className="bg-gray-50 p-4 rounded text-center">
+                                        <p className="text-gray-600">No matched donors found within 50 km radius.</p>
+                                    </div>
+                                ) : (
+                                    <ul className="divide-y divide-gray-200">
+                                        {matchedDonors.map((donor) => (
+                                            <li key={donor._id} className="py-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <h3 className="text-lg font-medium">{donor.name}</h3>
+                                                        <p className="text-sm text-gray-600">
+                                                            Blood Type: {donor.bloodType} |
+                                                            Distance: {donor.distance ? `${donor.distance.toFixed(1)} km` : 'Unknown'}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600">Contact: {donor.phone}</p>
+                                                        <p className="text-sm text-gray-600">Last Donation: {donor.lastDonationDate ? formatDate(donor.lastDonationDate) : 'Never'}</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleSendDonorRequest(donor._id, donor.email)}
+                                                        disabled={donor.requestSent || updatingId === donor._id}
+                                                        className={`px-3 py-1 rounded-md text-sm font-medium ${donor.requestSent
+                                                            ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
+                                                            : updatingId === donor._id
+                                                                ? 'bg-blue-400 text-white'
+                                                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                            }`}
+                                                    >
+                                                        {donor.requestSent
+                                                            ? 'Request Sent'
+                                                            : updatingId === donor._id
+                                                                ? 'Sending...'
+                                                                : 'Send Request'
+                                                        }
+                                                    </button>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+
+                                <div className="mt-6 flex justify-end">
+                                    <button
+                                        onClick={() => {
+                                            setShowDonorMatchDialog(false);
+                                            setMatchedDonors([]);
+                                            setCurrentRequestId(null);
+                                        }}
+                                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Tab Navigation */}
                     <div className="border-b border-gray-200 mb-6">
                         <nav className="-mb-px flex space-x-8">
@@ -335,6 +500,7 @@ const AdminRequestsPage = () => {
                                                         request={request}
                                                         updatingId={updatingId}
                                                         handleStatusChange={handleStatusChange}
+                                                        handleMatchDonors={handleMatchDonors}
                                                         formatDate={formatDate}
                                                     />
                                                 ))}
@@ -364,6 +530,7 @@ const AdminRequestsPage = () => {
                                                         request={request}
                                                         updatingId={updatingId}
                                                         handleStatusChange={handleStatusChange}
+                                                        handleMatchDonors={handleMatchDonors}
                                                         formatDate={formatDate}
                                                         isHistory={true}
                                                     />
@@ -381,7 +548,7 @@ const AdminRequestsPage = () => {
     );
 };
 
-const RequestItem = ({ request, updatingId, handleStatusChange, formatDate, isHistory = false }) => (
+const RequestItem = ({ request, updatingId, handleStatusChange, handleMatchDonors, formatDate, isHistory = false }) => (
     <li className={`p-4 hover:bg-gray-50 ${request.status === 'Approved' ? 'bg-green-50' :
         request.status === 'Pending' ? 'bg-yellow-50' : 'bg-gray-50'
         }`}>
@@ -427,9 +594,6 @@ const RequestItem = ({ request, updatingId, handleStatusChange, formatDate, isHi
                 {request.status === 'Approved' && request.approvalDetails && (
                     <div className="mt-2 p-2 bg-green-100 rounded">
                         <p className="text-sm font-medium text-green-800">Approval Details:</p>
-                        {/* <p className="text-sm text-green-700">
-                            Available on: {formatDate(request.approvalDetails.date)} at {request.approvalDetails.time}
-                        </p> */}
                         {request.approvalDetails.message && (
                             <p className="text-sm text-green-700">Message: {request.approvalDetails.message}</p>
                         )}
@@ -443,7 +607,19 @@ const RequestItem = ({ request, updatingId, handleStatusChange, formatDate, isHi
                 </p>
             </div>
             {!isHistory && (
-                <div className="mt-4 md:mt-0 md:ml-4 flex space-x-2">
+                <div className="mt-4 md:mt-0 md:ml-4 flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                    {request.type === 'Blood' && (
+                        <button
+                            onClick={() => handleMatchDonors(request._id)}
+                            disabled={updatingId === request._id}
+                            className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white ${updatingId === request._id
+                                ? 'bg-purple-400'
+                                : 'bg-purple-600 hover:bg-purple-700'
+                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500`}
+                        >
+                            {updatingId === request._id ? 'Searching...' : 'Match Donors'}
+                        </button>
+                    )}
                     <button
                         onClick={() => handleStatusChange(request._id, 'Approved')}
                         disabled={updatingId === request._id}

@@ -45,6 +45,12 @@ const pledgeSchema = new mongoose.Schema({
         required: function () { return this.donationType === 'organ'; },
         match: [/^\d{6}$/, 'Pincode must be 6 digits']
     },
+    longitude: {
+        type: Number
+    },
+    latitude: {
+        type: Number
+    },
     donationType: {
         type: String,
         required: true,

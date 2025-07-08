@@ -198,6 +198,9 @@ const NewRequestForm = ({ onSubmit, onCancel }) => {
             bloodType: requestType === 'Blood' ? formData.bloodType : '',
             organ: requestType === 'Organ' ? formData.organ : '',
             additionalInfo: formData.additionalInfo,
+            address: localStorage.getItem('address'),
+            latitude: localStorage.getItem('latitude'),
+            longitude: localStorage.getItem('longitude'),
             status: 'Pending'
         };
         onSubmit(request);

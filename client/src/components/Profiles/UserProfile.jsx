@@ -16,6 +16,7 @@ const UserProfile = () => {
         aadhar: '',
         role: ''
     });
+    const [userRole, setUserRole] = useState('');
 
     // Function to fetch user details manually
     const fetchUserDetails = async (email) => {
@@ -39,6 +40,9 @@ const UserProfile = () => {
     useEffect(() => {
         const initializeData = async () => {
             if (currentUser) {
+                const role = localStorage.getItem('userRole');
+                setUserRole(role);
+
                 // First try to get fresh data from server
                 try {
                     const freshUserData = await fetchUserDetails(currentUser.email);
@@ -86,6 +90,11 @@ const UserProfile = () => {
                 role: role
             };
 
+            // For donors, also update blood group if allowed
+            if (role === 'donor') {
+                updateData.bloodGroup = formData.bloodGroup;
+            }
+
             // Step 1: Update user data
             await axios.put('http://localhost:8000/api/auth/updateuserprofile', updateData);
 
@@ -99,13 +108,19 @@ const UserProfile = () => {
                 address: updatedUser.address,
                 mobile: updatedUser.mobile
             };
+
+            if (role === 'donor') {
+                updatedUserData.bloodGroup = updatedUser.bloodGroup;
+            }
+
             localStorage.setItem('userData', JSON.stringify(updatedUserData));
 
             // Step 4: Update form state with fresh data
             setFormData(prev => ({
                 ...prev,
                 address: updatedUser.address,
-                mobile: updatedUser.mobile
+                mobile: updatedUser.mobile,
+                ...(role === 'donor' && { bloodGroup: updatedUser.bloodGroup })
             }));
 
             setIsEditing(false);
@@ -118,7 +133,7 @@ const UserProfile = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {localStorage.getItem('userRole') == 'recipient' ? <UserHeader /> : <DonorHeader />}
+            {userRole === 'recipient' ? <UserHeader /> : <DonorHeader />}
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -138,7 +153,7 @@ const UserProfile = () => {
                                 <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full bg-white bg-opacity-20">
                                     <span className="h-2 w-2 rounded-full bg-white mr-2"></span>
                                     <span className="text-sm font-medium capitalize">
-                                        {formData.role} | Blood Group: {formData.bloodGroup || 'Not specified'}
+                                        {formData.role} {userRole === 'donor' && `| Blood Group: ${formData.bloodGroup || 'Not specified'}`}
                                     </span>
                                 </div>
                             </div>
@@ -184,10 +199,31 @@ const UserProfile = () => {
                                     <p className="text-gray-900">{formData.email}</p>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Blood Group</label>
-                                    <p className="text-gray-900">{formData.bloodGroup || 'Not specified'}</p>
-                                </div>
+                                {userRole === 'donor' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Blood Group</label>
+                                        {isEditing ? (
+                                            <select
+                                                name="bloodGroup"
+                                                value={formData.bloodGroup}
+                                                onChange={handleChange}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                                            >
+                                                <option value="">Select Blood Group</option>
+                                                <option value="A+">A+</option>
+                                                <option value="A-">A-</option>
+                                                <option value="B+">B+</option>
+                                                <option value="B-">B-</option>
+                                                <option value="AB+">AB+</option>
+                                                <option value="AB-">AB-</option>
+                                                <option value="O+">O+</option>
+                                                <option value="O-">O-</option>
+                                            </select>
+                                        ) : (
+                                            <p className="text-gray-900">{formData.bloodGroup || 'Not specified'}</p>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
@@ -209,10 +245,12 @@ const UserProfile = () => {
                             </div>
 
                             <div className="space-y-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Aadhar Card Number</label>
-                                    <p className="text-gray-900">{formData.aadhar || 'Not specified'}</p>
-                                </div>
+                                {userRole === 'donor' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Aadhar Card Number</label>
+                                        <p className="text-gray-900">{formData.aadhar || 'Not specified'}</p>
+                                    </div>
+                                )}
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>

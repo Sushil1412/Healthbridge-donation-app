@@ -11,6 +11,7 @@ const { pledges, mypledge, bloodRequestDonor, bloodrequestfordonor, upadateBlood
 
 const { requestapprove, updateuserprofile, getuser } = require('../controllers/request/requestapprove');
 const { bloodsummary, organsummary } = require('../controllers/inventory/inventoryrequest');
+const { findDonors, sendDonorRequest } = require('../controllers/request/matchingdonor');
 
 const { validateSignup } = require('./validation');
 
@@ -35,6 +36,8 @@ router.get('/bloodrequestforadmin', bloodrequestforadmin);
 router.patch('/requestapprove/:id', requestapprove);
 router.get('/bloodsummary', bloodsummary);
 router.get('/organsummary', organsummary);
+router.post('/findDonors', findDonors);
+router.post('/sendDonorRequest/:email', sendDonorRequest);
 
 //hospital request
 
