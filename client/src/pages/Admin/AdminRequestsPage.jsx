@@ -31,7 +31,7 @@ const AdminRequestsPage = () => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const userResponse = await axios.get('http://localhost:8000/api/auth/adminapplication');
+                const userResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/adminapplication`);
                 const sortedUserRequests = userResponse.data.sort((a, b) =>
                     new Date(b.createdAt) - new Date(a.createdAt)
                 );
@@ -102,7 +102,7 @@ const AdminRequestsPage = () => {
             );
 
             await axios.patch(
-                `http://localhost:8000/api/auth/requestapprove/${currentRequestId}`,
+                `${import.meta.env.VITE_API_URL}/api/auth/requestapprove/${currentRequestId}`,
                 approvalData
             );
 
@@ -118,7 +118,7 @@ const AdminRequestsPage = () => {
             setError(err.response?.data?.message || 'Failed to approve request');
             console.error('Approval error:', err);
 
-            const userResponse = await axios.get('http://localhost:8000/api/auth/adminapplication');
+            const userResponse = await axios.get('${import.meta.env.VITE_API_URL}/api/auth/adminapplication');
             const sortedUserRequests = userResponse.data.sort((a, b) =>
                 new Date(b.createdAt) - new Date(a.createdAt)
             );
@@ -146,7 +146,7 @@ const AdminRequestsPage = () => {
             );
 
             await axios.patch(
-                `http://localhost:8000/api/auth/adminapplicationupdate`,
+                `${import.meta.env.VITE_API_URL}/api/auth/adminapplicationupdate`,
                 { requestId, status: newStatus, }
             );
 
@@ -154,7 +154,7 @@ const AdminRequestsPage = () => {
             setError(err.response?.data?.message || 'Failed to update request status');
             console.error('Update error:', err);
 
-            const userResponse = await axios.get('http://localhost:8000/api/auth/adminapplication');
+            const userResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/adminapplication`);
             const sortedUserRequests = userResponse.data.sort((a, b) =>
                 new Date(b.createdAt) - new Date(a.createdAt)
             );
@@ -173,7 +173,7 @@ const AdminRequestsPage = () => {
             const currentRequest = requests.find(req => req._id === requestId);
             console.log("thisc", currentRequest.location);
             // Call API to find matched donors
-            const response = await axios.post('http://localhost:8000/api/auth/findDonors', {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/findDonors`, {
                 bloodType: currentRequest.bloodType,
                 longitude: currentRequest.longitude,
                 latitude: currentRequest.latitude,
@@ -206,7 +206,7 @@ const AdminRequestsPage = () => {
             };
 
             // Send request to donor
-            await axios.post(`http://localhost:8000/api/auth/sendDonorRequest/${email}`, requestData);
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/sendDonorRequest/${email}`, requestData);
 
             // Update UI
             setMatchedDonors(prev => prev.map(donor =>

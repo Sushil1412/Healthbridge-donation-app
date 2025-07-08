@@ -44,7 +44,7 @@ const RecipientDashboard = () => {
 
     const handleSubmitRequest = async (newRequest) => {
         try {
-            await axios.post('http://localhost:8000/api/auth/userrequest', newRequest);
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/userrequest`, newRequest);
             setShowRequestForm(false);
         } catch (error) {
             console.error('Error submitting request:', error);

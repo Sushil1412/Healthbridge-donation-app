@@ -32,7 +32,7 @@ const OrganPage = () => {
             if (!hospitalEmail) return;
 
             try {
-                const response = await axios.get(`http://localhost:8000/api/auth/organinventory?hospitalEmail=${hospitalEmail}`);
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/organinventory?hospitalEmail=${hospitalEmail}`);
                 setOrgans(response.data);
                 setLoading(false);
             } catch (err) {
@@ -51,7 +51,7 @@ const OrganPage = () => {
             if (!hospitalEmail) return;
 
             try {
-                const response = await axios.get(`http://localhost:8000/api/auth/hospitalorganrequests?hospitalEmail=${hospitalEmail}&type=organ`);
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/hospitalorganrequests?hospitalEmail=${hospitalEmail}&type=organ`);
                 setRequests(response.data);
                 setRequestsLoading(false);
             } catch (err) {
@@ -81,7 +81,7 @@ const OrganPage = () => {
         e.preventDefault();
         try {
             const hospitalName = localStorage.getItem('name');
-            await axios.patch('http://localhost:8000/api/auth/hospitalrequestsubmit', {
+            await axios.patch(`${import.meta.env.VITE_API_URL}/api/auth/hospitalrequestsubmit`, {
                 hospitalEmail: hospitalEmail,
                 requestType: 'organ',
                 organType: selectedOrgan,
@@ -106,7 +106,7 @@ const OrganPage = () => {
         e.preventDefault();
         try {
             const hospitalName = localStorage.getItem('name');
-            await axios.post('http://localhost:8000/api/auth/organinventoryupdate', {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/organinventoryupdate`, {
                 hospitalEmail: hospitalEmail,
                 hospitalName: hospitalName,
                 organType: selectedOrgan,

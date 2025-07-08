@@ -17,7 +17,7 @@ const MyRequests = () => {
 
     const fetchRequestsFromBackend = async () => {
         try {
-            const response = await axios.get(`http://localhost:8000/api/auth/userrequest/${id}`);
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/userrequest/${id}`);
             const sortedRequests = response.data.sort((a, b) =>
                 new Date(b.createdAt) - new Date(a.createdAt));
             setRequests(sortedRequests);

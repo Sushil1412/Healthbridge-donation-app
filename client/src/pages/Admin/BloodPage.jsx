@@ -32,7 +32,7 @@ const BloodDonationPage = () => {
             if (!hospitalEmail) return;
 
             try {
-                const response = await axios.get(`http://localhost:8000/api/auth/hospitalinventory?hospitalEmail=${hospitalEmail}`);
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/hospitalinventory?hospitalEmail=${hospitalEmail}`);
                 const transformedData = response.data.map(item => ({
                     type: item.bloodType,
                     units: item.units
@@ -55,7 +55,7 @@ const BloodDonationPage = () => {
             if (!hospitalEmail) return;
 
             try {
-                const response = await axios.get(`http://localhost:8000/api/auth/bloodrequestforadmin`);
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/bloodrequestforadmin`);
                 console.log(response.data);
                 setRequests(response.data.data);
                 setRequestsLoading(false);
@@ -86,7 +86,7 @@ const BloodDonationPage = () => {
         e.preventDefault();
         try {
             const name = localStorage.getItem('name');
-            await axios.post('http://localhost:8000/api/auth/hospitalrequest', {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/hospitalrequest`, {
                 hospitalEmail: hospitalEmail,
                 type: 'Blood',
                 bloodType: selectedBlood,
@@ -112,7 +112,7 @@ const BloodDonationPage = () => {
         try {
             const name = localStorage.getItem('name');
             console.log(name);
-            await axios.post('http://localhost:8000/api/auth/inventoryupdate', {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/inventoryupdate`, {
                 name,
                 hospitalEmail: hospitalEmail,
                 bloodType: selectedBlood,

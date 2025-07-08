@@ -11,8 +11,8 @@ const Inventory = () => {
         const fetchSummaries = async () => {
             try {
                 const [bloodRes, organRes] = await Promise.all([
-                    axios.get('http://localhost:8000/api/auth/bloodsummary'),
-                    axios.get('http://localhost:8000/api/auth/organsummary')
+                    axios.get(`${import.meta.env.VITE_API_URL}/api/auth/bloodsummary`),
+                    axios.get(`${import.meta.env.VITE_API_URL}/api/auth/organsummary`)
                 ]);
 
                 setBloodSummary(bloodRes.data);

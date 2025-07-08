@@ -15,7 +15,7 @@ const MyPledge = () => {
             try {
 
                 const email = localStorage.getItem('email');
-                const response = await axios.get('http://localhost:8000/api/auth/mypledge',
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/mypledge`,
                     {
                         params: {
                             email: email

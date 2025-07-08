@@ -17,7 +17,7 @@ const Registration = () => {
                 setLoading(true);
                 const token = localStorage.getItem('userToken');
 
-                const response = await fetch('http://localhost:8000/api/auth/adminrequests', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/adminrequests`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -73,7 +73,7 @@ const Registration = () => {
     const updateRequestStatus = async (id, type, newStatus) => {
         try {
             const token = localStorage.getItem('userToken');
-            const response = await fetch(`http://localhost:8000/api/auth/adminrequests/${type}/${id}/status`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/adminrequests/${type}/${id}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',

@@ -29,7 +29,7 @@ const Pledge = () => {
   useEffect(() => {
     const checkExistingPledges = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/auth/mypledgetype', {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/mypledgetype`, {
           params: {
             email: localStorage.getItem('email')
           }
@@ -103,7 +103,7 @@ const Pledge = () => {
         organTypes: pledge.donationType === 'organ' ? pledge.organTypes : undefined
       };
 
-      const response = await axios.post('http://localhost:8000/api/auth/pledges', pledgeData, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/pledges`, pledgeData, {
         headers: {
           'Content-Type': 'application/json',
         },

@@ -27,7 +27,7 @@ export default function BloodDonationCard() {
     useEffect(() => {
         const fetchDonors = async () => {
             try {
-                const response = await axios.get('http://localhost:8000/api/auth/hospitalmypledge', {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/hospitalmypledge`, {
                     params: {
                         donationType: 'blood'
                     }
@@ -93,7 +93,7 @@ export default function BloodDonationCard() {
             console.log(requestData);
 
             const response = await axios.post(
-                'http://localhost:8000/api/auth/bloodRequestDonor',
+                `${import.meta.env.VITE_API_URL}/api/auth/bloodRequestDonor`,
                 requestData
             );
 
@@ -115,7 +115,7 @@ export default function BloodDonationCard() {
             const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
 
             const response = await axios.patch(
-                `http://localhost:8000/api/auth/updatedonorstatus/${donorId}`,
+                `${import.meta.env.VITE_API_URL}/api/auth/updatedonorstatus/${donorId}`,
                 { status: newStatus }
             );
 

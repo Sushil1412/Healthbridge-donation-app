@@ -23,7 +23,7 @@ const UserProfile = () => {
         const role = localStorage.getItem('userRole');
 
         try {
-            const response = await axios.get(`http://localhost:8000/api/auth/getuser?email`, {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/getuser?email`, {
                 params: {
                     email: email,
                     role: role
@@ -96,7 +96,7 @@ const UserProfile = () => {
             }
 
             // Step 1: Update user data
-            await axios.put('http://localhost:8000/api/auth/updateuserprofile', updateData);
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/auth/updateuserprofile`, updateData);
 
             // Step 2: Manually fetch updated user details
             const updatedUser = await fetchUserDetails(currentUser.email);

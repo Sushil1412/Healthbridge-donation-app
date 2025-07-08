@@ -171,7 +171,7 @@ const Signup = () => {
                 payload.aadhar = formData.aadhar;
             }
 
-            const res = await axios.post('http://localhost:8000/api/auth/signup', payload);
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/signup`, payload);
             console.log(res);
             navigate('/', { state: { successMessage: 'Registration successful! Please login.' } });
         } catch (err) {

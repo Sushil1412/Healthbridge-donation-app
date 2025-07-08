@@ -15,7 +15,7 @@ const OrganDonor = () => {
     useEffect(() => {
         const fetchDonors = async () => {
             try {
-                const response = await axios.get('http://localhost:8000/api/auth/hospitalmypledge', {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/hospitalmypledge`, {
                     params: {
                         donationType: 'organ'
                     }
@@ -40,7 +40,7 @@ const OrganDonor = () => {
         try {
             const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
             const response = await axios.patch(
-                `http://localhost:8000/api/auth/updatedonorstatus/${donorId}`,
+                `${import.meta.env.VITE_API_URL}/api/auth/updatedonorstatus/${donorId}`,
                 { status: newStatus }
             );
 

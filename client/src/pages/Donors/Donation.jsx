@@ -16,7 +16,7 @@ const AdminHospitalRequests = () => {
             try {
                 setLoading(true);
                 const email = localStorage.getItem('email');
-                const response = await axios.get(`http://localhost:8000/api/auth/bloodrequestfordonor?email=${email}`);
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/bloodrequestfordonor?email=${email}`);
                 const sortedRequests = response.data.data.sort((a, b) =>
                     new Date(b.createdAt) - new Date(a.createdAt)
                 );
@@ -51,7 +51,7 @@ const AdminHospitalRequests = () => {
             const bloodGroup = currentRequest?.bloodGroup || ""; // Use bloodType or whatever field contains the blood group
             console.log("this is", bloodGroup);
             await axios.patch(
-                `http://localhost:8000/api/auth/upadateBloodrequestdonor`,
+                `${import.meta.env.VITE_API_URL}/api/auth/upadateBloodrequestdonor`,
                 {
                     requestId,
                     status: newStatus,
@@ -64,7 +64,7 @@ const AdminHospitalRequests = () => {
             console.error('Update error:', err);
 
             // Revert on error by refetching
-            const response = await axios.get(`http://localhost:8000/api/auth/bloodrequestfordonor?email=${email}`);
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/bloodrequestfordonor?email=${email}`);
             const sortedRequests = response.data.sort((a, b) =>
                 new Date(b.createdAt) - new Date(a.createdAt)
             );
