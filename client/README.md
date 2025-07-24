@@ -1,12 +1,57 @@
-# React + Vite
+# 🩸 HealthBridge Donation App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**HealthBridge** is a full-stack platform designed to streamline **blood** and **organ donation** between **donors**, **hospitals**, and **admins**. The system ensures real-time coordination, donor outreach, inventory tracking, and secure request processing — all aimed at saving lives with speed and transparency.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Project Overview
 
-## Expanding the ESLint configuration
+The platform has three main stakeholders:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 🔐 Admin Panel
+- Approves hospital registrations (no hospital can log in without approval).
+- Maintains and monitors blood and organ **inventory**.
+- Handles **requests** from hospitals for blood or organs.
+  - ✅ If available in inventory → directly accepts the request and shares **collection details** with the hospital.
+  - ❌ If **not available**, searches for **donors within a 50km radius** of the requesting hospital.
+    - Sends **donation request** to those donors.
+    - If a donor accepts, the admin shares donor info with the hospital for collection.
+    
+### 🏥 Hospital/Recipient Panel
+- Register and await approval from the admin.
+- Once approved, can:
+  - Log in to portal.
+  - Request blood or organ donations.
+  - Get **donation details** after request acceptance.
+
+### 🧑‍💼 Donor Panel
+- Register and log in.
+- Can pledge to **donate blood and/or organs**.
+- Receive **donation requests** from admin.
+  - If accepted, donor details are shared securely with the requesting hospital.
+
+---
+
+## ✨ Features
+
+- 🔐 Role-based login: Admin, Hospital, Donor
+- 📦 Blood & Organ Inventory Management (Admin Only)
+- 📍 Smart radius-based donor search (within 50km)
+- 🔁 Real-time status tracking for requests
+- 📨 Donor notification system
+- 👨‍⚕️ Hospital approval system
+- 📈 Dashboard for requests, inventory & statistics
+
+---
+
+## 🛠️ Tech Stack
+
+| Frontend        | Backend         | Database      | Other Tools         |
+|----------------|----------------|----------------|---------------------|
+| React.js        | Node.js         | MongoDB + Mongoose | JWT (Auth), Axios, Express |
+| Tailwind CSS    | Express.js      |                | Geolocation API (for 50km radius donor search) |
+
+---
+
+## 📦 Folder Structure
+
