@@ -8,7 +8,7 @@
 
 🚀 [Click here to visit the live app](https://healthbridge-donation-app-frontend.onrender.com/)
 
-> _Note: Replace the above link with your actual deployed link._
+
 
 ---
 
