@@ -51,7 +51,5 @@ The platform has three main stakeholders:
 | React.js        | Node.js         | MongoDB + Mongoose | JWT (Auth), Axios, Express |
 | Tailwind CSS    | Express.js      |                | Geolocation API (for 50km radius donor search) |
 
----
-
-## 📦 Folder Structure
+Live at https://healthbridge-donation-app-frontend.onrender.com/
 
